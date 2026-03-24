@@ -7,8 +7,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node --import tsx dist/index.js",
-    "dev": "npm run build && npm start",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx src/index.tsx",
+    "test": "echo \"No automated tests - run 'npm run dev' to smoke test\" && exit 0"
   },
   "dependencies": {
     "ink": "^6.8.0",

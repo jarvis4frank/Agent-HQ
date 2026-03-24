@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Text, useInput } from 'ink'
+import { Box, Text, useInput, useApp } from 'ink'
 import { useStore } from '../store.js'
 import AgentList from './AgentList.js'
 import ChatPanel from './ChatPanel.js'
@@ -11,9 +11,15 @@ const OfficeView: React.FC = () => {
   const selectedAgentId = useStore((state) => state.selectedAgentId)
   const selectAgent = useStore((state) => state.selectAgent)
 
+  const { exit } = useApp()
   const [focus, setFocus] = useState<FocusArea>('office')
 
-  useInput((_char, key) => {
+  useInput((char, key) => {
+    if (char === 'q' || (key.ctrl && char === 'c')) {
+      exit()
+      return
+    }
+
     if (key.tab) {
       setFocus((prev) => (prev === 'office' ? 'chat' : 'office'))
     }
@@ -47,7 +53,7 @@ const OfficeView: React.FC = () => {
         <Box flexDirection="column" flexGrow={1}>
           <Box>
             <Text bold color={focus === 'office' ? 'cyan' : 'white'}>Office</Text>
-            <Text color="dim">  {agents.length} agents  |  arrows: select  |  tab: switch panel</Text>
+            <Text color="dim">  {agents.length} agents  |  arrows: select agent  |  tab: switch panel  |  q: quit</Text>
           </Box>
           <AgentList />
         </Box>
@@ -59,7 +65,7 @@ const OfficeView: React.FC = () => {
       {/* Status Bar */}
       <Box borderStyle="single" paddingX={1}>
         <Text color="dim">
-          Selected: {selectedAgentId ?? 'none'} | Focus: {focus} | Tab: switch | Arrows: navigate agents
+          Selected: {selectedAgentId ?? 'none'} | Focus: {focus} | Tab: switch panel | Arrows: select agent | Q: quit
         </Text>
       </Box>
     </Box>
