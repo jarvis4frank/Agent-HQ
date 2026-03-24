@@ -6,6 +6,19 @@ export function hasClaudeCli(): boolean {
   return (globalThis as any).__CLAUDE_CLI_AVAILABLE__ ?? false
 }
 
+// Usage tracking
+let _totalTokens: number = 0
+let _totalRequests: number = 0
+
+export function getUsage(): { tokens: number; requests: number } {
+  return { tokens: _totalTokens, requests: _totalRequests }
+}
+
+export function addUsage(tokens: number): void {
+  _totalTokens += tokens
+  _totalRequests += 1
+}
+
 // Roles cycled when spawning new agents dynamically
 const AGENT_ROLES = ['researcher', 'coder', 'reviewer', 'executor', 'planner', 'tester'] as const
 const AGENT_NAMES = ['Researcher', 'Coder', 'Reviewer', 'Executor', 'Planner', 'Tester'] as const
@@ -16,8 +29,9 @@ function buildInitialAgents(): Agent[] {
   return Array.from({ length: count }, (_, i) => ({
     id: String(i + 1),
     name: AGENT_NAMES[i % AGENT_NAMES.length],
-    role: AGENT_ROLES[i % AGENT_ROLES.length],
+    role: AGENT_ROLES[i % AGENT_NAMES.length],
     status: 'idle' as const,
+    isMain: i === 0, // First agent is main agent
   }))
 }
 
@@ -39,7 +53,7 @@ export function createAgent(overrides: Partial<Omit<Agent, 'id'>> = {}): Agent {
 export const useStore = create<AgentState>((set) => ({
   agents: buildInitialAgents(),
   messages: [],
-  selectedAgentId: null,
+  selectedAgentId: '1', // Auto-select first agent (main)
 
   addAgent: (agent) => set((state) => ({
     agents: [...state.agents, agent],
@@ -47,7 +61,7 @@ export const useStore = create<AgentState>((set) => ({
 
   removeAgent: (id) => set((state) => ({
     agents: state.agents.filter((a) => a.id !== id),
-    selectedAgentId: state.selectedAgentId === id ? null : state.selectedAgentId,
+    selectedAgentId: state.selectedAgentId === id ? '1' : state.selectedAgentId,
   })),
 
   updateAgent: (id, updates) => set((state) => ({

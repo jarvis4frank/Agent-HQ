@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
-import { useStore, createAgent, hasClaudeCli } from '../store.js'
+import { useStore, createAgent, hasClaudeCli, getUsage } from '../store.js'
 import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
 import AgentList from './AgentList.js'
 import ChatPanel from './ChatPanel.js'
@@ -130,7 +130,11 @@ const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailab
       {overlay === 'none' && (
         <Box borderStyle="single" paddingX={1}>
           <Text color="dim">
-            Selected: {selectedAgentId ?? 'none'} | Agents: {agents.length} | Focus: {focus} | Mode: {hasApiKey ? 'sdk' : 'mock'}
+            {(() => {
+              const selectedAgent = agents.find(a => a.id === selectedAgentId)
+              const usage = getUsage()
+              return `Chatting: ${selectedAgent?.name ?? 'none'} | Agents: ${agents.length} | Focus: ${focus} | Usage: ${usage.tokens} tokens`
+            })()}
           </Text>
         </Box>
       )}

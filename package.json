@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node --import tsx dist/index.js",
-    "dev": "tsx src/index.tsx",
+    "dev": "tsx src/index.tsx </dev/null",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -76,7 +76,7 @@ const AgentSprite: React.FC<AgentSpriteProps> = ({
 
       {/* Agent name */}
       <Text bold color={isSelected ? 'cyan' : 'white'}>
-        {agent.name.slice(0, 12)}
+        {agent.isMain ? '★ ' : ''}{agent.name.slice(0, 12)}
       </Text>
 
       {/* Status badge */}

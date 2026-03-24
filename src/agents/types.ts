@@ -25,6 +25,7 @@ export interface Agent {
   currentTask?: string
   lastMessage?: string
   config?: AgentConfig
+  isMain?: boolean  // Main agent (coordinator)
 }
 
 export interface AgentState {
