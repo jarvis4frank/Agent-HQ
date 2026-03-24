@@ -1,89 +1,89 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Box, Text } from 'ink'
 import { Agent, AgentStatus } from '../agents/types.js'
-
-const statusColor: Record<AgentStatus, string> = {
-  idle: 'gray',
-  thinking: 'yellow',
-  working: 'green',
-  error: 'red',
-  waiting: 'blue',
-}
-
-const statusLabel: Record<AgentStatus, string> = {
-  idle: ' IDLE ',
-  thinking: ' THINK',
-  working: ' WORK ',
-  error: ' ERR  ',
-  waiting: ' WAIT ',
-}
-
-const roleSprite: Record<string, string[]> = {
-  research: [
-    ' .---. ',
-    '(  o  )',
-    ' `---` ',
-    ' /|||\\  ',
-  ],
-  coder: [
-    ' .---. ',
-    '( ._. )',
-    ' `---` ',
-    ' |{|}| ',
-  ],
-  reviewer: [
-    ' .---. ',
-    '( .v. )',
-    ' `---` ',
-    ' /[_]\\  ',
-  ],
-  executor: [
-    ' .---. ',
-    '( >_< )',
-    ' `---` ',
-    ' |/|\\| ',
-  ],
-  default: [
-    ' .---. ',
-    '(  _  )',
-    ' `---` ',
-    ' /| |\\  ',
-  ],
-}
+import {
+  mapAgentToVisual,
+  mapClaudeCodeStatus,
+  extractStatusFromMessage,
+  getIconForStatus,
+  STATUS_COLORS,
+  STATUS_LABELS,
+} from '../sprites/mapper.js'
 
 interface AgentSpriteProps {
   agent: Agent
   isSelected: boolean
+  onSelect?: (id: string) => void
+  /** Enable animation loop (for demo/testing) */
+  animated?: boolean
 }
 
-const AgentSprite: React.FC<AgentSpriteProps> = ({ agent, isSelected }) => {
-  const color = statusColor[agent.status]
-  const sprite = roleSprite[agent.role] ?? roleSprite.default
-  const label = statusLabel[agent.status]
+/** Animation frames for each status type */
+const STATUS_FRAMES: Record<AgentStatus, string[]> = {
+  idle: [' ', '  '],
+  thinking: ['💭', ' '],
+  working: ['⚡', '⚡'],
+  error: ['❌', '❗'],
+  waiting: ['⚠️', ' '],
+}
+
+const AgentSprite: React.FC<AgentSpriteProps> = ({
+  agent,
+  isSelected,
+  onSelect,
+  animated = false,
+}) => {
+  const visual = mapAgentToVisual(agent)
+  const [frame, setFrame] = useState(0)
+
+  // Animation loop
+  useEffect(() => {
+    if (!animated) return
+
+    const interval = setInterval(() => {
+      setFrame(f => (f + 1) % 2)
+    }, 800)
+
+    return () => clearInterval(interval)
+  }, [animated])
+
+  const borderColor = isSelected ? 'cyan' : visual.color
+  const borderStyle = isSelected ? 'bold' : 'round'
 
   return (
     <Box
       flexDirection="column"
       alignItems="center"
       width={18}
-      borderStyle={isSelected ? 'bold' : 'round'}
-      borderColor={isSelected ? 'cyan' : color}
+      borderStyle={borderStyle}
+      borderColor={borderColor}
       paddingX={1}
       paddingY={0}
       marginRight={1}
       marginBottom={1}
     >
-      {/* Sprite */}
-      {sprite.map((line, i) => (
-        <Text key={i} color={color}>{line}</Text>
+      {/* Animated status icon */}
+      <Text color={visual.color}>
+        {animated
+          ? `  ${STATUS_FRAMES[agent.status][frame]}  `
+          : `   ${visual.icon}   `}
+      </Text>
+
+      {/* Sprite body */}
+      {visual.sprite.map((line, i) => (
+        <Text key={i} color={visual.color}>{line}</Text>
       ))}
 
-      {/* Name */}
-      <Text bold color={isSelected ? 'cyan' : 'white'}>{agent.name.slice(0, 12)}</Text>
+      {/* Agent name */}
+      <Text bold color={isSelected ? 'cyan' : 'white'}>
+        {agent.name.slice(0, 12)}
+      </Text>
 
       {/* Status badge */}
       <Box>
-        <Text backgroundColor={color} color="black">{label}</Text>
+        <Text backgroundColor={visual.color} color="black">
+          {visual.label}
+        </Text>
       </Box>
 
       {/* Current task (truncated) */}
@@ -97,3 +97,14 @@ const AgentSprite: React.FC<AgentSpriteProps> = ({ agent, isSelected }) => {
 }
 
 export default AgentSprite
+
+// === Export helper functions for external use ===
+
+export {
+  mapAgentToVisual,
+  mapClaudeCodeStatus,
+  extractStatusFromMessage,
+  getIconForStatus,
+  STATUS_COLORS,
+  STATUS_LABELS,
+}

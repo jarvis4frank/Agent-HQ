@@ -165,6 +165,8 @@ export class ClaudeAdapter {
   }
 
   kill(): void {
+    this.simulationCleanup?.()
+    this.simulationCleanup = null
     this.sdkAbort?.abort()
     this.sdkAbort = null
     this.process?.kill()
@@ -172,8 +174,10 @@ export class ClaudeAdapter {
     this.updateAgent({ status: 'idle', currentTask: undefined })
   }
 
+  private simulationCleanup: (() => void) | null = null
+
   isRunning(): boolean {
-    return this.process !== null || this.sdkAbort !== null
+    return this.process !== null || this.sdkAbort !== null || this.simulationCleanup !== null
   }
 
   getOutputBuffer(): readonly string[] {
@@ -226,6 +230,8 @@ export class ClaudeAdapter {
 
     tick()
     const interval = setInterval(tick, 3000)
-    return () => clearInterval(interval)
+    
+    this.simulationCleanup = () => clearInterval(interval)
+    return this.simulationCleanup
   }
 }

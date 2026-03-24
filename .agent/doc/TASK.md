@@ -21,23 +21,23 @@
 ## Phase 2: UI 層
 
 ### T3: 辦公室場景
-- [ ] 建立 src/components/OfficeView.tsx - 辦公室主視圖
-- [ ] 配置終端佈局
-- [ ] 建立 src/components/AgentList.tsx - Agent 列表
-- [ ] 驗收：場景正確渲染
+- [x] 建立 src/components/OfficeView.tsx - 辦公室主視圖
+- [x] 配置終端佈局
+- [x] 建立 src/components/AgentList.tsx - Agent 列表
+- [x] 驗收：場景正確渲染
 
 ### T4: Agent Sprite 渲染
-- [ ] 建立 src/components/AgentSprite.tsx - Agent 視覺元件
-- [ ] 建立 src/sprites/renderer.ts - ASCII/Unicode 渲染器
-- [ ] 實現狀態對應邏輯（從 Claude Code 來的狀態）
-- [ ] 實現 src/sprites/mapper.ts - Agent→視覺映射
-- [ ] 驗收：Agent 視覺正確顯示
+- [x] 建立 src/components/AgentSprite.tsx - Agent 視覺元件
+- [x] 建立 src/sprites/renderer.ts - ASCII/Unicode 渲染器
+- [x] 實現狀態對應邏輯（從 Claude Code 來的狀態）
+- [x] 實現 src/sprites/mapper.ts - Agent→視覺映射
+- [x] 驗收：Agent 視覺正確顯示
 
 ### T5: 對話面板
-- [ ] 建立 src/components/ChatPanel.tsx - 對話面板
-- [ ] 實現輸入/輸出處理
-- [ ] 實現可收縮折疊功能
-- [ ] 快捷鍵支援
+- [x] 建立 src/components/ChatPanel.tsx - 對話面板
+- [x] 實現輸入/輸出處理
+- [x] 實現可收縮折疊功能
+- [x] 快捷鍵支援
 - [ ] 驗收：對話功能正常
 
 ---

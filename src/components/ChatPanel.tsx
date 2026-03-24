@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Box, Text, useInput } from 'ink'
 import { useStore } from '../store.js'
 import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
@@ -40,7 +40,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
   const addMessage = useStore((state) => state.addMessage)
 
   const [input, setInput] = useState('')
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const adaptersRef = useRef<Map<string, ClaudeAdapter>>(new Map())
+
+  // Auto-collapse when switching away from chat
+  useEffect(() => {
+    if (!isActive && !isCollapsed) {
+      setIsCollapsed(true)
+    }
+  }, [isActive])
 
   const getAdapter = (agentId: string): ClaudeAdapter => {
     if (!adaptersRef.current.has(agentId)) {
@@ -59,7 +67,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
   }
 
   useInput((char, key) => {
-    if (!isActive) return
+    // Toggle collapse with backslash key
+    if (char === '\\') {
+      setIsCollapsed((prev) => !prev)
+      return
+    }
+
+    if (!isActive || isCollapsed) return
 
     if (key.return) {
       const trimmed = input.trim()
@@ -93,6 +107,32 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     : messages
   const recentMessages = filteredMessages.slice(-8)
 
+  // Render collapsed state
+  if (isCollapsed) {
+    return (
+      <Box
+        flexDirection="column"
+        width={42}
+        borderStyle="round"
+        borderColor={isActive ? 'cyan' : 'gray'}
+        paddingX={1}
+      >
+        <Box justifyContent="space-between">
+          <Box>
+            <Text bold color={isActive ? 'cyan' : 'white'}>Chat</Text>
+            {selectedAgent && (
+              <Text color="dim">  → {selectedAgent.name}</Text>
+            )}
+          </Box>
+          <Text color="dim">[\\ to expand]</Text>
+        </Box>
+        <Text color="dim">{'─'.repeat(38)}</Text>
+        <Text color="dim" italic>Panel collapsed. Press \ to expand.</Text>
+      </Box>
+    )
+  }
+
+  // Render expanded state
   return (
     <Box
       flexDirection="column"
@@ -102,11 +142,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
       paddingX={1}
     >
       {/* Header */}
-      <Box>
-        <Text bold color={isActive ? 'cyan' : 'white'}>Chat</Text>
-        {selectedAgent && (
-          <Text color="dim">  → {selectedAgent.name} [{selectedAgent.config?.mode ?? 'auto'}]</Text>
-        )}
+      <Box justifyContent="space-between">
+        <Box>
+          <Text bold color={isActive ? 'cyan' : 'white'}>Chat</Text>
+          {selectedAgent && (
+            <Text color="dim">  → {selectedAgent.name} [{selectedAgent.config?.mode ?? 'auto'}]</Text>
+          )}
+        </Box>
+        <Text color="dim">[\\ to collapse]</Text>
       </Box>
 
       {/* Divider */}
