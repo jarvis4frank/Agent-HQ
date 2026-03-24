@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useStore } from '../store.js'
 import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
 import { ANIMATIONS } from '../hooks/useAnimation.js'
-import { Agent } from '../agents/types.js'
+import { Agent, Message } from '../agents/types.js'
 
 // Reset store before each test
 beforeEach(() => {
@@ -217,7 +217,7 @@ describe('T8 - End-to-End Tests', () => {
       // Setup: Select agent and add user message
       useStore.getState().selectAgent('1')
       
-      const userMsg = {
+      const userMsg: Message = {
         id: 'user-msg-1',
         agentId: 'user',
         content: 'Hello, can you help me?',

@@ -48,9 +48,18 @@ export class ClaudeAdapter {
     this.systemPrompt = options.systemPrompt
   }
 
-  /** Resolve effective mode: auto picks sdk when key present, else mock. */
+  /** Resolve effective mode: auto picks cli when available, else mock. */
   private resolvedMode(): 'sdk' | 'cli' | 'mock' {
-    if (this.mode === 'auto') return this.apiKey ? 'sdk' : 'mock'
+    if (this.mode === 'auto') {
+      // Check if Claude CLI is available
+      try {
+        require('child_process').execSync(this.claudePath, { stdio: 'ignore' })
+        return 'cli'
+      } catch {
+        // CLI not available, fall back to mock
+        return 'mock'
+      }
+    }
     return this.mode
   }
 
@@ -112,7 +121,7 @@ export class ClaudeAdapter {
     const env: NodeJS.ProcessEnv = { ...process.env }
     if (this.apiKey) env.ANTHROPIC_API_KEY = this.apiKey
 
-    this.process = spawn(this.claudePath, ['--print', prompt], {
+    this.process = spawn(this.claudePath, ['-p', '--dangerously-skip-permissions', prompt], {
       cwd: this.workDir,
       env,
     })
