@@ -25,6 +25,7 @@ export interface AgentState {
   selectedAgentId: string | null
   addAgent: (agent: Agent) => void
   removeAgent: (id: string) => void
+  updateAgent: (id: string, updates: Partial<Omit<Agent, 'id'>>) => void
   updateAgentStatus: (id: string, status: AgentStatus) => void
   addMessage: (message: Message) => void
   selectAgent: (id: string | null) => void
