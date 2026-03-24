@@ -2,11 +2,12 @@
   "name": "agent-hq",
   "version": "1.0.0",
   "description": "Agent HQ - Claude Code Agent Team Visualization Interface",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsc && npm start",
+    "start": "node --import tsx dist/index.js",
+    "dev": "npm run build && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
 }
