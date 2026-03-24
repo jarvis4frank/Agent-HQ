@@ -10,6 +10,13 @@ export interface Message {
   role: 'user' | 'agent'
 }
 
+export interface AgentConfig {
+  mode?: 'auto' | 'sdk' | 'cli' | 'mock'
+  workDir?: string
+  systemPrompt?: string
+  initialPrompt?: string
+}
+
 export interface Agent {
   id: string
   name: string
@@ -17,6 +24,7 @@ export interface Agent {
   status: AgentStatus
   currentTask?: string
   lastMessage?: string
+  config?: AgentConfig
 }
 
 export interface AgentState {

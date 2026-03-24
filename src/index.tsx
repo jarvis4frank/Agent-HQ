@@ -5,25 +5,34 @@ import OfficeView from './components/OfficeView'
 import { useStore } from './store'
 import { ClaudeAdapter } from './agents/ClaudeAdapter'
 
-// Drives each agent: uses real Claude CLI when ANTHROPIC_API_KEY is set, otherwise mock.
+// Drives each initial agent on startup.
+// Uses SDK when ANTHROPIC_API_KEY is set (auto mode), otherwise mock.
 const DemoController: React.FC = () => {
   const agents = useStore((state) => state.agents)
   const cleanupRef = useRef<Array<() => void>>([])
-  const hasKey = Boolean(process.env.ANTHROPIC_API_KEY)
 
   useEffect(() => {
     const cancels = agents.map((agent, index) => {
-      const adapter = new ClaudeAdapter({ agentId: agent.id })
+      const adapter = new ClaudeAdapter({
+        agentId: agent.id,
+        mode: agent.config?.mode ?? 'auto',
+        workDir: agent.config?.workDir,
+        systemPrompt: agent.config?.systemPrompt,
+      })
+
       const delay = index * 1200
       const timer = setTimeout(() => {
-        if (hasKey) {
-          // Real mode: send an initial prompt to each agent based on its role
-          adapter.spawn(`You are a ${agent.role} agent. Briefly describe what you are working on right now in one sentence.`)
+        const prompt = agent.config?.initialPrompt
+          ?? `You are a ${agent.role} agent. Briefly describe what you are working on right now in one sentence.`
+
+        if (adapter.getResolvedMode() === 'mock') {
+          const stop = adapter.startMockSimulation()
+          cleanupRef.current.push(stop)
         } else {
-          const cleanup = adapter.startMockSimulation()
-          cleanupRef.current.push(cleanup)
+          adapter.spawn(prompt)
         }
       }, delay)
+
       return () => clearTimeout(timer)
     })
 

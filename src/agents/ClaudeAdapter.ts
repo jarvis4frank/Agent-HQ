@@ -1,17 +1,22 @@
 import { spawn, ChildProcess } from 'child_process'
 import { config as loadEnv } from 'dotenv'
+import Anthropic from '@anthropic-ai/sdk'
 import { useStore } from '../store.js'
 import { AgentStatus } from './types.js'
 
 // Load .env once at module level (no-op if already set or file absent)
 loadEnv()
 
+export type AdapterMode = 'auto' | 'sdk' | 'cli' | 'mock'
+
 export interface ClaudeAdapterOptions {
   agentId: string
+  mode?: AdapterMode
   claudePath?: string
   workDir?: string
   /** Override API key. Falls back to ANTHROPIC_API_KEY env var. */
   apiKey?: string
+  systemPrompt?: string
 }
 
 // Map output patterns to agent status + task label
@@ -25,28 +30,87 @@ const STATUS_PATTERNS: Array<{ pattern: RegExp; status: AgentStatus; taskLabel?:
 
 export class ClaudeAdapter {
   private agentId: string
+  private mode: AdapterMode
   private claudePath: string
   private workDir: string
   private apiKey: string | undefined
+  private systemPrompt: string | undefined
   private process: ChildProcess | null = null
+  private sdkAbort: AbortController | null = null
   private outputBuffer: string[] = []
 
   constructor(options: ClaudeAdapterOptions) {
     this.agentId = options.agentId
+    this.mode = options.mode ?? 'auto'
     this.claudePath = options.claudePath ?? 'claude'
     this.workDir = options.workDir ?? process.cwd()
     this.apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY
+    this.systemPrompt = options.systemPrompt
+  }
+
+  /** Resolve effective mode: auto picks sdk when key present, else mock. */
+  private resolvedMode(): 'sdk' | 'cli' | 'mock' {
+    if (this.mode === 'auto') return this.apiKey ? 'sdk' : 'mock'
+    return this.mode
   }
 
   spawn(prompt: string): void {
-    if (this.process) this.kill()
+    this.kill()
+    const mode = this.resolvedMode()
+    if (mode === 'sdk') {
+      this.spawnSdk(prompt)
+    } else if (mode === 'cli') {
+      this.spawnCli(prompt)
+    } else {
+      this.startMockSimulation()
+    }
+  }
 
+  // --- SDK mode ---
+
+  private spawnSdk(prompt: string): void {
+    this.updateAgent({ status: 'thinking', currentTask: 'Starting...' })
+    this.sdkAbort = new AbortController()
+
+    const client = new Anthropic({ apiKey: this.apiKey })
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: prompt }]
+    const params: Anthropic.MessageStreamParams = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages,
+      ...(this.systemPrompt ? { system: this.systemPrompt } : {}),
+    }
+
+    const stream = client.messages.stream(params, { signal: this.sdkAbort.signal })
+
+    stream.on('text', (text) => {
+      text.split('\n').filter(Boolean).forEach((line) => this.handleOutput(line))
+    })
+
+    stream.on('error', (err) => {
+      if ((err as NodeJS.ErrnoException).name === 'AbortError') return
+      this.updateAgent({ status: 'error', currentTask: err.message.slice(0, 40) })
+      this.sdkAbort = null
+    })
+
+    stream.finalMessage().then(() => {
+      this.updateAgent({ status: 'idle', currentTask: 'Task complete' })
+      this.sdkAbort = null
+    }).catch((err) => {
+      if ((err as NodeJS.ErrnoException).name !== 'AbortError') {
+        this.updateAgent({ status: 'error', currentTask: err.message.slice(0, 40) })
+      }
+      this.sdkAbort = null
+    })
+  }
+
+  // --- CLI mode ---
+
+  private spawnCli(prompt: string): void {
     this.updateAgent({ status: 'thinking', currentTask: 'Starting...' })
 
     const env: NodeJS.ProcessEnv = { ...process.env }
-    if (this.apiKey) {
-      env.ANTHROPIC_API_KEY = this.apiKey
-    }
+    if (this.apiKey) env.ANTHROPIC_API_KEY = this.apiKey
 
     this.process = spawn(this.claudePath, ['--print', prompt], {
       cwd: this.workDir,
@@ -101,13 +165,15 @@ export class ClaudeAdapter {
   }
 
   kill(): void {
+    this.sdkAbort?.abort()
+    this.sdkAbort = null
     this.process?.kill()
     this.process = null
     this.updateAgent({ status: 'idle', currentTask: undefined })
   }
 
   isRunning(): boolean {
-    return this.process !== null
+    return this.process !== null || this.sdkAbort !== null
   }
 
   getOutputBuffer(): readonly string[] {
@@ -119,6 +185,13 @@ export class ClaudeAdapter {
    */
   hasApiKey(): boolean {
     return Boolean(this.apiKey)
+  }
+
+  /**
+   * Returns the resolved mode that will be used when spawn() is called.
+   */
+  getResolvedMode(): 'sdk' | 'cli' | 'mock' {
+    return this.resolvedMode()
   }
 
   /**
