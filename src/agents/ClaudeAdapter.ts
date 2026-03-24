@@ -51,12 +51,14 @@ export class ClaudeAdapter {
   /** Resolve effective mode: auto picks cli when available, else mock. */
   private resolvedMode(): 'sdk' | 'cli' | 'mock' {
     if (this.mode === 'auto') {
-      // Check if Claude CLI is available
+      // Check if Claude CLI is available via shell command
       try {
-        require('child_process').execSync(this.claudePath, { stdio: 'ignore' })
+        require('child_process').execSync(`${this.claudePath} --version`, {
+          stdio: 'ignore',
+          shell: true,
+        })
         return 'cli'
       } catch {
-        // CLI not available, fall back to mock
         return 'mock'
       }
     }
