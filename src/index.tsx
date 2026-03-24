@@ -4,35 +4,28 @@ import 'dotenv/config'
 // This must be the FIRST import in the file
 import './precheck.js'
 
-// Fix Raw mode error: Create a mock stdin that looks like a TTY
-// This is needed because we're running with stdin from /dev/null
-class MockStdin {
-  isTTY = true
-  readonly writable = false
-  readonly readable = true
-  
-  setEncoding(encoding: string) {}
-  setRawMode(enabled: boolean) {}
-  resume() {}
-  pause() {}
-  ref() {}
-  unref() {}
-  
-  on(event: string, handler: Function) { return this }
-  once(event: string, handler: Function) { return this }
-  addListener(event: string, handler: Function) { return this }
-  removeListener(event: string, handler: Function) {}
-  removeAllListeners(event?: string) {}
-  emit(event: string, ...args: any[]) { return true }
-  read(size?: number) { return null }
-  _read(size: number) {}
-}
-
-// Replace stdin before ink loads if running with redirected stdin
-const originalStdin = process.stdin as any
-if (!originalStdin.isTTY) {
-  process.stdin = new MockStdin() as any
-}
+// Fix Raw mode error: Try to make stdin look like a TTY
+// This handles the case when running with stdin redirected from /dev/null
+try {
+  const stdin = process.stdin as any
+  if (!stdin.isTTY) {
+    // Make isTTY return true to trick Ink
+    Object.defineProperty(stdin, 'isTTY', {
+      get: () => true,
+      set: () => {},
+      configurable: true
+    })
+    // Add all missing methods that Ink expects
+    if (typeof stdin.ref !== 'function') stdin.ref = () => {}
+    if (typeof stdin.unref !== 'function') stdin.unref = () => {}
+    if (typeof stdin.addListener !== 'function') stdin.addListener = () => stdin
+    if (typeof stdin.on !== 'function') stdin.on = () => stdin
+    if (typeof stdin.setRawMode !== 'function') stdin.setRawMode = () => {}
+    if (typeof stdin.setEncoding !== 'function') stdin.setEncoding = () => {}
+    if (typeof stdin.resume !== 'function') stdin.resume = () => {}
+    if (typeof stdin.pause !== 'function') stdin.pause = () => {}
+  }
+} catch (e) {}
 
 import React, { useEffect, useRef } from 'react'
 import { render, Box } from 'ink'
