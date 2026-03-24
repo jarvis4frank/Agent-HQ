@@ -32,7 +32,6 @@ const OfficeView: React.FC = () => {
     }
   })()
   const isCliMode = hasClaudeCli || hasApiKey
-  console.log('[OfficeView] mode check:', { hasApiKey, hasClaudeCli, isCliMode })
 
   const handleAddAgent = (values: AgentFormValues): void => {
     const agent = createAgent({ name: values.name, role: values.role, config: values.config })
