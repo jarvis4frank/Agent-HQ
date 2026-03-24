@@ -56,6 +56,13 @@ claude --agents '{
 }' -p "<任務描述>"
 ```
 
+### 權限設定
+- **選項 2**：允許特定工具 `--allowed-tools "Bash(npm:*) Edit Write Read"`
+- **選項 3**：對話中確認，當需要權限時詢問 Master
+
+如果無法決定，會詢問 Master。
+```
+
 ---
 
 ## 原則

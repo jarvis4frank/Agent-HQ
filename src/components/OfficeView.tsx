@@ -1,46 +1,65 @@
-import React from 'react'
-import { render, Box, Text } from 'ink'
+import React, { useState } from 'react'
+import { Box, Text, useInput } from 'ink'
 import { useStore } from '../store.js'
-import AgentList from './AgentList'
+import AgentList from './AgentList.js'
+import ChatPanel from './ChatPanel.js'
+
+type FocusArea = 'office' | 'chat'
 
 const OfficeView: React.FC = () => {
   const agents = useStore((state) => state.agents)
-  const messages = useStore((state) => state.messages)
+  const selectedAgentId = useStore((state) => state.selectedAgentId)
+  const selectAgent = useStore((state) => state.selectAgent)
+
+  const [focus, setFocus] = useState<FocusArea>('office')
+
+  useInput((_char, key) => {
+    if (key.tab) {
+      setFocus((prev) => (prev === 'office' ? 'chat' : 'office'))
+    }
+
+    if (focus === 'office') {
+      if (key.leftArrow || key.rightArrow || key.upArrow || key.downArrow) {
+        const ids = agents.map((a) => a.id)
+        const currentIdx = ids.indexOf(selectedAgentId ?? '')
+        if (key.rightArrow || key.downArrow) {
+          const next = ids[(currentIdx + 1) % ids.length]
+          selectAgent(next ?? null)
+        } else {
+          const prev = ids[(currentIdx - 1 + ids.length) % ids.length]
+          selectAgent(prev ?? null)
+        }
+      }
+    }
+  })
 
   return (
-    <Box flexDirection="column" height={100}>
+    <Box flexDirection="column">
       {/* Header */}
-      <Box borderStyle="bold" borderColor="cyan" padding={1}>
-        <Text bold color="cyan">🏢 Agent HQ - Claude Code Team Visualization</Text>
+      <Box borderStyle="bold" borderColor="cyan" paddingX={2} paddingY={0}>
+        <Text bold color="cyan">Agent HQ</Text>
+        <Text color="dim">  Claude Code Team Visualization</Text>
       </Box>
 
       {/* Main Content */}
-      <Box flexDirection="row" flexGrow={1} padding={1}>
-        {/* Office Scene - Agent Grid */}
-        <Box flexDirection="column" width={60}>
-          <Text bold>📍 Office</Text>
+      <Box flexDirection="row" marginTop={1}>
+        {/* Office Scene */}
+        <Box flexDirection="column" flexGrow={1}>
+          <Box>
+            <Text bold color={focus === 'office' ? 'cyan' : 'white'}>Office</Text>
+            <Text color="dim">  {agents.length} agents  |  arrows: select  |  tab: switch panel</Text>
+          </Box>
           <AgentList />
         </Box>
 
-        {/* Side Panel - Messages */}
-        <Box flexDirection="column" width={40} borderStyle="round" borderColor="gray" padding={1}>
-          <Text bold>💬 Messages</Text>
-          {messages.length === 0 ? (
-            <Text color="dim">No messages yet</Text>
-          ) : (
-            messages.slice(-5).map((msg) => (
-              <Text key={msg.id} color="dim">
-                {msg.role === 'user' ? '>' : msg.agentId}: {msg.content.slice(0, 30)}...
-              </Text>
-            ))
-          )}
-        </Box>
+        {/* Chat Panel */}
+        <ChatPanel isActive={focus === 'chat'} />
       </Box>
 
       {/* Status Bar */}
-      <Box borderStyle="single" padding={1}>
+      <Box borderStyle="single" paddingX={1}>
         <Text color="dim">
-          Agents: {agents.length} | Selected: {useStore.getState().selectedAgentId || 'none'} | Press Tab to select
+          Selected: {selectedAgentId ?? 'none'} | Focus: {focus} | Tab: switch | Arrows: navigate agents
         </Text>
       </Box>
     </Box>
