@@ -128,11 +128,14 @@ export class ClaudeAdapter {
   // --- CLI mode ---
 
   private spawnCli(prompt: string): void {
+    console.log('[ClaudeAdapter] spawnCli() called with prompt:', prompt.slice(0, 50))
     this.updateAgent({ status: 'thinking', currentTask: 'Starting...' })
 
     const env: NodeJS.ProcessEnv = { ...process.env }
     if (this.apiKey) env.ANTHROPIC_API_KEY = this.apiKey
 
+    console.log('[ClaudeAdapter] Spawning:', this.claudePath, ['-p', '--dangerously-skip-permissions', prompt], 'cwd:', this.workDir)
+    
     this.process = spawn(this.claudePath, ['-p', '--dangerously-skip-permissions', prompt], {
       cwd: this.workDir,
       env,
