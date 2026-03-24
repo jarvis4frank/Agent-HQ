@@ -56,7 +56,7 @@ const OfficeView: React.FC = () => {
     }
 
     if (focus === 'office') {
-      if (char === '+' || char === '=') {
+      if (char === '+' || char === '=' || char === 'a') {
         setOverlay('add')
         return
       }
@@ -110,7 +110,7 @@ const OfficeView: React.FC = () => {
           <Box flexDirection="column" flexGrow={1}>
             <Box>
               <Text bold color={focus === 'office' ? 'cyan' : 'white'}>Office</Text>
-              <Text color="dim">  {agents.length} agents  |  arrows: select  |  +: add  |  -: remove  |  tab: switch panel  |  q: quit</Text>
+              <Text color="dim">  {agents.length} agents  |  arrows: select  |  a/+: add  |  -: remove  |  tab: switch panel  |  q: quit</Text>
             </Box>
             <AgentList />
           </Box>
