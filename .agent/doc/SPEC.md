@@ -1,4 +1,4 @@
-# Agent Dashboard - 專案規格定義 (完整版)
+# Agent HQ - 專案規格定義 (完整版)
 
 ## 1. 專案概述
 
@@ -6,10 +6,11 @@
 |------|------|
 | **專案名稱** | Agent HQ |
 | **類型** | CLI/TUI 桌面應用程式 |
-| **核心功能** | 多 AI Agent 協作監控與互動界面 |
+| **核心功能** | 多 AI Agent 協作監控與互動界面，RPG 遊戲風格視覺化 |
 | **目標用戶** | 個人開發者、AI 愛好者 |
 | **技術堆疊** | TypeScript + Ink (React-style CLI) |
 | **Agent 引擎** | Claude Code (Agent Team) |
+| **視覺風格** | Pixel Art RPG (參考 Pixel HQ / CraftPix.net) |
 
 ---
 
@@ -17,25 +18,46 @@
 
 ### 2.1 多 Agent 狀態監控
 - 同時顯示多個 Agent 的運行狀態
-- 狀態類型：閒置、思考中、工作中、錯誤
+- 狀態類型：閒置、思考中、工作中、錯誤、等待回饋
 - 即時更新狀態（每秒或按需求更新）
 
-### 2.2 Agent 視覺化
-- 每個 Agent 用 Emoji/ASCII 圖形表示
-- 類似遊戲引擎的狀態條/頭像風格
-- 可顯示 Agent 名稱、狀態指示
-- 對應 Claude Code Agent Team 中的不同 Agent 角色
+### 2.2 Agent 視覺化 - RPG 風格
 
-### 2.2.1 預設 Agent 角色
+#### 2.2.1 視覺設計概念
 
-| Agent ID | Emoji | 說明 | 適合任務 |
-|----------|-------|------|----------|
-| research | 🔍 | 研究分析 Agent | 搜尋、分析、學習 |
-| coder | 💻 | 開發 Agent | 寫 code、debug |
-| reviewer | 👀 | 審查 Agent | code review、優化 |
-| executor | ⚡ | 執行 Agent | 執行命令、自動化 |
+**場景設計**：每個 Agent 有自己的「工作站」（像素風電腦桌場景）
 
-（可透過設定檔自訂）
+**人物姿勢與動畫**：
+
+| 狀態 | 姿勢描述 | 頭上圖示 |
+|------|----------|----------|
+| **idle（閒置）** | 坐在電腦前，雙手敲打鍵盤 | 💤 打呼 / 無 |
+| **thinking（思考中）** | 坐著手托下巴思考 | 💭 思考氣泡 |
+| **working（工作中）** | 站起來面向螢幕，認真工作 | ⚡ 閃電 |
+| **error（錯誤）** | 雙手舉頭表示驚訝/無奈 | ❌ 錯誤標記 |
+| **waiting（等待回饋）** | 站立轉頭看使用者，頭上有驚嘆號 | ⚠️ 驚嘆號 |
+
+**視覺元素**：
+- 像素風人物角色（32x32 或 64x64）
+- 電腦桌場景（螢幕、鍵盤、滑鼠）
+- 狀態動畫過渡
+- 頭上對話氣泡/驚嘆號
+
+#### 2.2.2 Agent 角色
+
+| Agent ID | 角色名稱 | 適合任務 | 視覺風格 |
+|----------|----------|----------|----------|
+| research | 🔬 研究員 | 搜尋、分析、學習 | 戴眼鏡、拿書本 |
+| coder | 💻 工程師 | 寫 code、debug | 戴耳機、敲鍵盤 |
+| reviewer | 🔍 審查員 | code review、優化 | 放大鏡、嚴肅表情 |
+| executor | ⚡ 執行者 | 執行命令、自動化 | 機械手臂/齒輪 |
+
+#### 2.2.3 互動設計
+
+- **點擊 Agent**：展開對話面板
+- **驚嘆號氣泡**：點擊查看待處理事項
+- **對話氣泡**：顯示 Agent 想說的話
+- **狀態過渡**：流暢的動畫切換
 
 ### 2.3 個別互動（與 Claude Code Agent Team 對話）
 - 選擇特定 Agent 進行對話
@@ -67,27 +89,43 @@
 | UI Library | React | ^18.0.0 |
 | 類型定義 | @types/react | ^18 |
 | Agent 引擎 | Claude Code | 最新 |
+| 像素素材 | CraftPix.net 免費素材 | - |
 
 ### 3.2 專案結構
 
 ```
-agent-dashboard/
+agent-hq/
+├── .agent/
+│   └── doc/
+│       ├── SPEC.md
+│       ├── PLAN.md
+│       ├── TASK.md
+│       └── progress.md
+├── assets/
+│   ├── characters/         # 像素人物圖
+│   │   ├── research/
+│   │   ├── coder/
+│   │   ├── reviewer/
+│   │   └── executor/
+│   └── scenes/             # 場景圖
+│       └── computer-desk/
 ├── src/
-│   ├── index.tsx          # 入口點
-│   ├── App.tsx           # 主應用 Component
+│   ├── index.tsx           # 入口點
+│   ├── App.tsx             # 主應用 Component
 │   ├── components/
-│   │   ├── AgentCard.tsx  # Agent 卡片
-│   │   ├── AgentList.tsx  # Agent 列表
-│   │   ├── ChatPanel.tsx  # 對話面板
-│   │   └── StatusBar.tsx  # 狀態列
+│   │   ├── AgentSprite.tsx # 像素人物顯示
+│   │   ├── AgentStation.tsx# 工作站場景
+│   │   ├── StatusIcon.tsx   # 頭上狀態圖示
+│   │   ├── ChatPanel.tsx    # 對話面板
+│   │   └── StatusBar.tsx    # 狀態列
 │   ├── agents/
-│   │   ├── types.ts       # Agent 類型定義
-│   │   ├── manager.ts     # Agent 管理器
+│   │   ├── types.ts         # Agent 類型定義
+│   │   ├── manager.ts       # Agent 管理器
 │   │   └── ClaudeAdapter.ts # Claude Code 適配器
 │   ├── config/
-│   │   └── agents.ts       # Agent 設定
+│   │   └── agents.ts        # Agent 設定
 │   └── utils/
-│       └── logger.ts      # 日誌工具
+│       └── logger.ts       # 日誌工具
 ├── package.json
 ├── tsconfig.json
 └── SPEC.md
@@ -101,43 +139,11 @@ agent-dashboard/
 - 透過 subprocess 與 Claude Code 通訊
 - 即時接收輸出並更新狀態
 
-**通訊流程**：
-```
-┌─────────────────────────────┐
-│   Agent Dashboard (TUI)     │
-├─────────────────────────────┤
-│  Claude Code (subprocess)   │
-│  ┌───────┐ ┌───────┐       │
-│  │Research│ │ Coder │  ... │  ← Agent Team
-│  └───────┘ └───────┘       │
-├─────────────────────────────┤
-│  stdout/stderr 監聽          │
-│  狀態更新                    │
-└─────────────────────────────┘
-```
+### 3.4 視覺素材來源
 
-### 3.4 Claude Code Agent Team 定義
-
-```json
-{
-  "research": {
-    "description": "Research Agent - 負責搜尋和分析資訊",
-    "prompt": "你是一個研究分析 Agent，擅長搜尋、分析和總結資訊。當需要進行研究任務時，請提供深入的分析和建議。"
-  },
-  "coder": {
-    "description": "Coder Agent - 負責開發和寫程式",
-    "prompt": "你是一個開發 Agent，擅長寫程式、debug 和技術實作。當需要開發功能時，請提供高品質的程式碼。"
-  },
-  "reviewer": {
-    "description": "Reviewer Agent - 負責程式碼審查和優化",
-    "prompt": "你是一個審查 Agent，擅長 code review、找出問題和提供優化建議。當需要審查程式碼時，請提供詳細的回饋。"
-  },
-  "executor": {
-    "description": "Executor Agent - 負責執行命令和自動化",
-    "prompt": "你是一個執行 Agent，擅長執行命令、運行腳本和自動化任務。當需要執行操作時，請確保安全並提供回饋。"
-  }
-}
-```
+- **CraftPix.net** 免費 2D 素材
+- **Universal LPC Spritesheet** 開源素材
+- 自行用 Piskel 或 PixelLab 製作
 
 ---
 
@@ -145,29 +151,54 @@ agent-dashboard/
 
 ### 4.1 啟動流程
 ```
-1. 使用者輸入命令啟動 Agent Dashboard
+1. 使用者輸入命令啟動 Agent HQ
 2. 系統載入 Agent 設定
 3. 初始化 Claude Code subprocess
-4. 顯示 Agent 卡片列表（預設狀態：idle）
-5. 使用者選擇 Agent 進行互動
+4. 顯示 RPG 風格工作場景
+5. 每個 Agent 在自己的工作站在電腦前（idle 狀態）
+6. 使用者選擇 Agent 進行互動
 ```
 
 ### 4.2 互動流程
 ```
-1. 使用者點選/選擇 Agent
-2. 對話面板展開
-3. 使用者輸入訊息
-4. 訊息傳送給對應的 Claude Code Agent
-5. 即時顯示 Agent 狀態（thinking）
-6. 接收回應並顯示
-7. 狀態回到 idle
+1. Agent 需要回饋 → 站起來，頭上顯示驚嘆號 ⚠️
+2. 使用者點擊 Agent/驚嘆號 → 對話面板展開
+3. 使用者輸入訊息 → Agent 變為 thinking 狀態 💭
+4. Agent 回覆 → 狀態回到 working → idle
+5. 有錯誤 → Agent 雙手舉頭 ❌
 ```
 
-### 4.3 狀態切換
+### 4.3 狀態機
+
 ```
-idle → (選擇 Agent) → thinking → (收到回應) → idle
-idle → (收到新任務) → working → (完成) → idle
-idle → (發生錯誤) → error → (修復) → idle
+┌─────────┐
+│  idle   │ ← 默认状态，坐在电脑前
+└────┬────┘
+     │ 收到新任务
+     ▼
+┌─────────┐
+│ working │ ← 站起来工作
+└────┬────┘
+     │ 需要思考
+     ▼
+┌──────────┐
+│ thinking │ ← 坐着思考
+└────┬─────┘
+     │ 完成
+     ▼
+┌─────────┐
+│  idle   │
+└────┬────┘
+     │ 需要用户反馈
+     ▼
+┌──────────┐
+│ waiting  │ ← 站着看用户，头上的!
+└────┬─────┘
+     │ 出错
+     ▼
+┌────────┐
+│ error  │ ← 双手举头
+└───────┘
 ```
 
 ---
@@ -176,7 +207,9 @@ idle → (發生錯誤) → error → (修復) → idle
 
 ### 5.1 功能驗收
 - [ ] 可同時顯示 3+ Agent 的狀態
-- [ ] 每個 Agent 有視覺化表示（Emoji + 名稱）
+- [ ] 每個 Agent 有 RPG 風格像素視覺表示
+- [ ] 人物根據狀態變換姿勢動畫
+- [ ] 頭上顯示狀態圖示（驚嘆號、氣泡等）
 - [ ] 可選擇特定 Agent 對話
 - [ ] 主對話界面可展開/收起
 - [ ] 狀態即時更新
@@ -185,14 +218,15 @@ idle → (發生錯誤) → error → (修復) → idle
 ### 5.2 技術驗收
 - [ ] TypeScript 編譯無錯誤
 - [ ] Ink 應用可正常啟動
+- [ ] 像素素材正確載入與顯示
 - [ ] 模組化架構，易於擴充
 - [ ] 錯誤處理完善
 
 ### 5.3 使用者體驗
 - [ ] 啟動時間 < 3 秒
 - [ ] 互動延遲 < 1 秒（不含網路）
-- [ ] 清楚的状态提示
-- [ ] 直覺的操作方式
+- [ ] 清楚的狀態動畫提示
+- [ ] 直覺的 RPG 風格操作方式
 
 ---
 
@@ -201,13 +235,13 @@ idle → (發生錯誤) → error → (修復) → idle
 | 階段 | 工作內容 | 預估時間 |
 |------|----------|----------|
 | T1 | 環境搭建 + 基本框架 | 1-2 天 |
-| T2 | Agent 卡片顯示 | 1-2 天 |
-| T3 | 狀態監控功能 | 1-2 天 |
-| T4 | 對話功能 | 2-3 天 |
-| T5 | 可收縮視窗 | 1 天 |
-| T6 | 測試與優化 | 2-3 天 |
+| T2 | RPG 像素視覺設計 + Agent 卡片 | 2-3 天 |
+| T3 | 人物姿勢動畫 + 狀態圖示 | 2-3 天 |
+| T4 | 對話功能 + 點擊互動 | 2-3 天 |
+| T5 | 可收縮視窗 + 動畫過渡 | 1-2 天 |
+| T6 | 測試與優化 + Claude Code 整合 | 2-3 天 |
 
-**總計：約 8-15 天**
+**總計：約 10-16 天**
 
 ---
 
@@ -215,6 +249,7 @@ idle → (發生錯誤) → error → (修復) → idle
 
 | 風險 | 機率 | 影響 | 緩解措施 |
 |------|------|------|----------|
+| 像素素材取得 | 中 | 低 | 使用免費開源素材 |
 | Claude Code subprocess 整合困難 | 中 | 高 | 先用 Mock 資料開發 MVP |
-| Ink 與 Node 版本相容性 | 低 | 中 | 指定 Node 18+ |
+| Ink 動畫支援有限 | 中 | 中 | 使用文字動畫或預設圖示 |
 | 狀態同步問題 | 中 | 中 | 使用事件驅動架構 |
