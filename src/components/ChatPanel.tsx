@@ -43,7 +43,51 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [inputMode, setInputMode] = useState<'normal' | 'multiline'>('normal')
+  const [showAutocomplete, setShowAutocomplete] = useState(false)
+  const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
+  const [autocompleteIndex, setAutocompleteIndex] = useState(0)
   const adaptersRef = useRef<Map<string, ClaudeAdapter>>(new Map())
+
+  // File autocomplete logic
+  const handleAutocomplete = (text: string) => {
+    const lastAt = text.lastIndexOf('@')
+    if (lastAt === -1) {
+      setShowAutocomplete(false)
+      return
+    }
+
+    const partial = text.slice(lastAt + 1)
+    if (partial.length < 1) {
+      setShowAutocomplete(false)
+      return
+    }
+
+    // Search for matching files/dirs
+    try {
+      const { readdirSync, statSync } = require('fs')
+      const cwd = process.cwd()
+      
+      // Find matching paths
+      const matches: string[] = []
+      const items = readdirSync(cwd)
+      
+      for (const item of items) {
+        if (item.startsWith('.') && !partial.startsWith('.')) continue
+        if (item.toLowerCase().includes(partial.toLowerCase())) {
+          try {
+            const stat = statSync(item)
+            matches.push(stat.isDirectory() ? item + '/' : item)
+          } catch {}
+        }
+      }
+      
+      setAutocompleteMatches(matches.slice(0, 5))
+      setShowAutocomplete(matches.length > 0)
+      setAutocompleteIndex(0)
+    } catch {
+      setShowAutocomplete(false)
+    }
+  }
 
   // Auto-collapse when switching away from chat
   useEffect(() => {
@@ -152,7 +196,36 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
 
     // Backspace
     if (key.backspace || key.delete) {
-      setInput((prev) => prev.slice(0, -1))
+      setInput((prev) => {
+        const newVal = prev.slice(0, -1)
+        // Update autocomplete on backspace
+        if (newVal.includes('@')) {
+          handleAutocomplete(newVal)
+        } else {
+          setShowAutocomplete(false)
+        }
+        return newVal
+      })
+      return
+    }
+
+    // Tab - autocomplete
+    if (key.tab && showAutocomplete) {
+      if (autocompleteMatches.length > 0) {
+        const lastAt = input.lastIndexOf('@')
+        const newInput = input.slice(0, lastAt) + '@' + autocompleteMatches[autocompleteIndex]
+        setInput(newInput)
+        setShowAutocomplete(false)
+      }
+      return
+    }
+
+    // Arrow up/down for autocomplete navigation
+    if ((key.upArrow || key.downArrow) && showAutocomplete) {
+      const newIndex = key.upArrow 
+        ? (autocompleteIndex - 1 + autocompleteMatches.length) % autocompleteMatches.length
+        : (autocompleteIndex + 1) % autocompleteMatches.length
+      setAutocompleteIndex(newIndex)
       return
     }
 
@@ -160,12 +233,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     if (key.ctrl && char === 'c') {
       setInput('')
       setInputMode('normal')
+      setShowAutocomplete(false)
       return
     }
 
     // Regular character input
     if (!key.ctrl && !key.meta && char) {
-      setInput((prev) => prev + char)
+      setInput((prev) => {
+        const newVal = prev + char
+        // Check if typing @ triggers autocomplete
+        if (char === '@') {
+          setShowAutocomplete(true)
+          setAutocompleteMatches([])
+        } else if (showAutocomplete) {
+          handleAutocomplete(newVal)
+        }
+        return newVal
+      })
     }
   })
 
@@ -275,6 +359,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
           </Box>
         )}
       </Box>
+
+      {/* Autocomplete dropdown */}
+      {showAutocomplete && autocompleteMatches.length > 0 && (
+        <Box flexDirection="column" borderStyle="single" borderColor="cyan">
+          <Text color="cyan" bold>Files:</Text>
+          {autocompleteMatches.map((match, i) => (
+            <Text key={match} color={i === autocompleteIndex ? 'cyan' : 'white'}>
+              {i === autocompleteIndex ? '▸ ' : '  '}{match}
+            </Text>
+          ))}
+          <Text color="dim">Tab to select, ↑↓ to navigate</Text>
+        </Box>
+      )}
 
       {/* Hints */}
       <Box>
