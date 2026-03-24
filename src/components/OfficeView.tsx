@@ -24,10 +24,15 @@ const OfficeView: React.FC = () => {
   const hasClaudeCli = (() => {
     try {
       require('child_process').execSync('claude --version', { stdio: 'ignore', shell: true })
+      console.log('[OfficeView] Claude CLI detected!')
       return true
-    } catch { return false }
+    } catch {
+      console.log('[OfficeView] Claude CLI not found')
+      return false
+    }
   })()
   const isCliMode = hasClaudeCli || hasApiKey
+  console.log('[OfficeView] mode check:', { hasApiKey, hasClaudeCli, isCliMode })
 
   const handleAddAgent = (values: AgentFormValues): void => {
     const agent = createAgent({ name: values.name, role: values.role, config: values.config })
