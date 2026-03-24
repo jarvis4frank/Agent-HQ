@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { Box, Text, useInput, Spacer } from 'ink'
+import TextInput from 'ink-text-input'
 import { useStore } from '../store.js'
 import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
 import { Message } from '../agents/types.js'
@@ -42,52 +43,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
   const [input, setInput] = useState('')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
-  const [inputMode, setInputMode] = useState<'normal' | 'multiline'>('normal')
-  const [showAutocomplete, setShowAutocomplete] = useState(false)
-  const [autocompleteMatches, setAutocompleteMatches] = useState<string[]>([])
-  const [autocompleteIndex, setAutocompleteIndex] = useState(0)
   const adaptersRef = useRef<Map<string, ClaudeAdapter>>(new Map())
-
-  // File autocomplete logic
-  const handleAutocomplete = (text: string) => {
-    const lastAt = text.lastIndexOf('@')
-    if (lastAt === -1) {
-      setShowAutocomplete(false)
-      return
-    }
-
-    const partial = text.slice(lastAt + 1)
-    if (partial.length < 1) {
-      setShowAutocomplete(false)
-      return
-    }
-
-    // Search for matching files/dirs
-    try {
-      const { readdirSync, statSync } = require('fs')
-      const cwd = process.cwd()
-      
-      // Find matching paths
-      const matches: string[] = []
-      const items = readdirSync(cwd)
-      
-      for (const item of items) {
-        if (item.startsWith('.') && !partial.startsWith('.')) continue
-        if (item.toLowerCase().includes(partial.toLowerCase())) {
-          try {
-            const stat = statSync(item)
-            matches.push(stat.isDirectory() ? item + '/' : item)
-          } catch {}
-        }
-      }
-      
-      setAutocompleteMatches(matches.slice(0, 5))
-      setShowAutocomplete(matches.length > 0)
-      setAutocompleteIndex(0)
-    } catch {
-      setShowAutocomplete(false)
-    }
-  }
 
   // Auto-collapse when switching away from chat
   useEffect(() => {
@@ -123,28 +79,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     const fileRefMatch = trimmed.match(/@(\S+)/g)
     if (fileRefMatch) {
       for (const ref of fileRefMatch) {
-        const filePath = ref.slice(1) // Remove @
+        const filePath = ref.slice(1)
         try {
           const fs = require('fs')
           if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf-8').slice(0, 2000)
             processedContent = processedContent.replace(ref, `\n[File: ${filePath}]\n${content}\n[/File]`)
           }
-        } catch (e) {
-          // File read failed, keep original
-        }
+        } catch (e) {}
       }
     }
 
-    // Handle &gt;cmd - run command and include output
+    // Handle &gt;cmd - run command
     const cmdMatch = trimmed.match(/^>(\S+)\s*(.*)$/m)
     if (cmdMatch) {
       const cmd = cmdMatch[1]
-      const args = cmdMatch[2] ? cmdMatch[2].split(' ') : []
       try {
         const { execSync } = require('child_process')
         const output = execSync(cmd, { cwd: process.cwd(), encoding: 'utf-8', timeout: 10000 }).slice(0, 2000)
-        processedContent = `[Command: ${cmd} ${cmdMatch[2]}]\n${output}\n[/Command]\n\n${trimmed.replace(/^>.*$/m, '').trim()}`
+        processedContent = `[Command: ${cmd}]\n${output}\n[/Command]\n\n${trimmed.replace(/^>.*$/m, '').trim()}`
       } catch (e) {
         processedContent = `[Command failed: ${cmd}]\n${trimmed.replace(/^>.*$/m, '').trim()}`
       }
@@ -165,91 +118,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     }
 
     setInput('')
-    setInputMode('normal')
   }
 
   useInput((char, key) => {
-    // Toggle collapse with backslash key
-    if (char === '\\') {
+    // Toggle collapse with backslash key (only in chat mode)
+    if (isActive && char === '\\') {
       setIsCollapsed((prev) => !prev)
-      if (!isCollapsed) setInputMode(prev => prev === 'multiline' ? 'normal' : 'multiline')
       return
     }
 
     // Help trigger
-    if (char === '?' && isActive && !isCollapsed) {
+    if (isActive && char === '?' && !isCollapsed) {
       setShowHelp(prev => !prev)
       return
     }
 
     if (!isActive || isCollapsed) return
 
-    // Enter sends in normal mode, newline in multiline mode
-    if (key.return) {
-      if (inputMode === 'multiline') {
-        setInput(prev => prev + '\n')
-      } else {
-        handleSend(input)
-      }
-      return
-    }
-
-    // Backspace
-    if (key.backspace || key.delete) {
-      setInput((prev) => {
-        const newVal = prev.slice(0, -1)
-        // Update autocomplete on backspace
-        if (newVal.includes('@')) {
-          handleAutocomplete(newVal)
-        } else {
-          setShowAutocomplete(false)
-        }
-        return newVal
-      })
-      return
-    }
-
-    // Tab - autocomplete
-    if (key.tab && showAutocomplete) {
-      if (autocompleteMatches.length > 0) {
-        const lastAt = input.lastIndexOf('@')
-        const newInput = input.slice(0, lastAt) + '@' + autocompleteMatches[autocompleteIndex]
-        setInput(newInput)
-        setShowAutocomplete(false)
-      }
-      return
-    }
-
-    // Arrow up/down for autocomplete navigation
-    if ((key.upArrow || key.downArrow) && showAutocomplete) {
-      const newIndex = key.upArrow 
-        ? (autocompleteIndex - 1 + autocompleteMatches.length) % autocompleteMatches.length
-        : (autocompleteIndex + 1) % autocompleteMatches.length
-      setAutocompleteIndex(newIndex)
-      return
-    }
-
     // Ctrl+C to cancel
     if (key.ctrl && char === 'c') {
       setInput('')
-      setInputMode('normal')
-      setShowAutocomplete(false)
       return
-    }
-
-    // Regular character input
-    if (!key.ctrl && !key.meta && char) {
-      setInput((prev) => {
-        const newVal = prev + char
-        // Check if typing @ triggers autocomplete
-        if (char === '@') {
-          setShowAutocomplete(true)
-          setAutocompleteMatches([])
-        } else if (showAutocomplete) {
-          handleAutocomplete(newVal)
-        }
-        return newVal
-      })
     }
   })
 
@@ -264,7 +153,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     return (
       <Box
         flexDirection="column"
-        width={42}
         borderStyle="round"
         borderColor={isActive ? 'cyan' : 'gray'}
         paddingX={1}
@@ -289,17 +177,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
     return (
       <Box
         flexDirection="column"
-        width={42}
-        height={20}
         borderStyle="round"
         borderColor="yellow"
         paddingX={1}
       >
         <Text bold color="yellow">╔═══════════ Help ═══════════╗</Text>
         <Text>▸ Enter   Send message</Text>
-        <Text>▸ \       Multi-line mode</Text>
         <Text>▸ @path   Reference file</Text>
         <Text>▸ &gt;cmd    Run command</Text>
+        <Text>▸ \       Toggle collapse</Text>
         <Text>▸ ?       This help</Text>
         <Text>▸ Ctrl+C  Cancel input</Text>
         <Text>▸ Tab     Switch panel</Text>
@@ -313,8 +199,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
   return (
     <Box
       flexDirection="column"
-      width={42}
-      height={22}
       borderStyle="round"
       borderColor={isActive ? 'cyan' : 'gray'}
       paddingX={1}
@@ -327,11 +211,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
             <Text color="dim">  → {selectedAgent.name}</Text>
           )}
         </Box>
-        <Text color="dim">[\\ {inputMode === 'multiline' ? 'send' : 'multi'}]</Text>
+        <Text color="dim">[\\ collapse]</Text>
       </Box>
       <Text color="dim">{'─'.repeat(40)}</Text>
 
-      {/* Messages - larger area */}
+      {/* Messages */}
       <Box flexDirection="column" flexGrow={1} overflow="hidden">
         {recentMessages.length === 0 ? (
           <Text color="dim" italic>  No messages yet...</Text>
@@ -344,38 +228,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ isActive }) => {
 
       <Text color="dim">{'─'.repeat(40)}</Text>
 
-      {/* Input area - larger */}
-      <Box flexDirection="column" minHeight={3}>
-        <Text color="dim">
-          {inputMode === 'multiline' ? '│ multiline │ ' : '│ >        │ '}
-          <Text color={isActive ? 'white' : 'dim'}>
-            {input || '(type message...)'}
-          </Text>
-        </Text>
-        {inputMode === 'multiline' && input.includes('\n') && (
-          <Box flexDirection="column" borderStyle="single" paddingX={1} marginTop={1}>
-            <Text color="cyan" bold>Preview:</Text>
-            <Text>{input.slice(0, 200)}{input.length > 200 ? '...' : ''}</Text>
-          </Box>
-        )}
+      {/* Input using ink-text-input - proper multiline support */}
+      <Box flexDirection="column">
+        <Text color="dim">▸ </Text>
+        <TextInput
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSend}
+          placeholder="Type message... (Enter to send)"
+        />
       </Box>
-
-      {/* Autocomplete dropdown */}
-      {showAutocomplete && autocompleteMatches.length > 0 && (
-        <Box flexDirection="column" borderStyle="single" borderColor="cyan">
-          <Text color="cyan" bold>Files:</Text>
-          {autocompleteMatches.map((match, i) => (
-            <Text key={match} color={i === autocompleteIndex ? 'cyan' : 'white'}>
-              {i === autocompleteIndex ? '▸ ' : '  '}{match}
-            </Text>
-          ))}
-          <Text color="dim">Tab to select, ↑↓ to navigate</Text>
-        </Box>
-      )}
 
       {/* Hints */}
       <Box>
-        <Text color="dim">▸ @file | &gt;cmd | \ multi | ? help</Text>
+        <Text color="dim">▸ @file | &gt;cmd | \ collapse | ? help</Text>
         <Spacer />
         <Text color={isActive ? 'green' : 'dim'}>
           {selectedAgent?.config?.mode ?? 'auto'}
