@@ -1,0 +1,21 @@
+{
+  "name": "agent-hq",
+  "version": "1.0.0",
+  "description": "Agent HQ - Claude Code Agent Team Visualization Interface",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && npm start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "ink": "^6.8.0",
+    "react": "^19.2.4",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "typescript": "^6.0.2"
+  }
+}
