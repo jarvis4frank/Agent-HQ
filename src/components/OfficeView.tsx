@@ -21,6 +21,13 @@ const OfficeView: React.FC = () => {
   const [overlay, setOverlay] = useState<OverlayMode>('none')
 
   const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY)
+  const hasClaudeCli = (() => {
+    try {
+      require('child_process').execSync('claude --version', { stdio: 'ignore', shell: true })
+      return true
+    } catch { return false }
+  })()
+  const isCliMode = hasClaudeCli || hasApiKey
 
   const handleAddAgent = (values: AgentFormValues): void => {
     const agent = createAgent({ name: values.name, role: values.role, config: values.config })
@@ -87,8 +94,8 @@ const OfficeView: React.FC = () => {
         <Text bold color="cyan">Agent HQ</Text>
         <Text color="dim">  Claude Code Team Visualization</Text>
         <Box flexGrow={1} />
-        {hasApiKey
-          ? <Text color="green"> API: connected</Text>
+        {isCliMode
+          ? <Text color="green"> API: Claude Code ready</Text>
           : <Text color="yellow"> API: no key (mock mode)</Text>
         }
       </Box>

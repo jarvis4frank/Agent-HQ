@@ -57,8 +57,10 @@ export class ClaudeAdapter {
           stdio: 'ignore',
           shell: true,
         })
+        console.log('[ClaudeAdapter] CLI detected, using cli mode')
         return 'cli'
       } catch {
+        console.log('[ClaudeAdapter] CLI not found, using mock mode')
         return 'mock'
       }
     }
