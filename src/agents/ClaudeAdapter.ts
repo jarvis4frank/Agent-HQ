@@ -51,7 +51,14 @@ export class ClaudeAdapter {
   /** Resolve effective mode: auto picks cli when available, else mock. */
   private resolvedMode(): 'sdk' | 'cli' | 'mock' {
     if (this.mode === 'auto') {
-      // Check if Claude CLI is available via shell command
+      // Use the pre-checked global value if available (from precheck.ts)
+      const cliAvailable = (globalThis as any).__CLAUDE_CLI_AVAILABLE__
+      if (cliAvailable !== undefined) {
+        console.log('[ClaudeAdapter] Using pre-checked CLI value:', cliAvailable)
+        return cliAvailable ? 'cli' : 'mock'
+      }
+      
+      // Fallback: check at runtime (may fail if Ink is already loaded)
       try {
         require('child_process').execSync(`${this.claudePath} --version`, {
           stdio: 'ignore',
