@@ -52,7 +52,13 @@ const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailab
   useInput((char, key) => {
     if (overlay !== 'none') return  // let AgentConfigForm handle input
 
-    if (char === 'q' || (key.ctrl && char === 'c')) {
+    // Only quit when in office mode (not chat)
+    if (focus === 'office' && char === 'q') {
+      exit()
+      return
+    }
+
+    if (key.ctrl && char === 'c') {
       exit()
       return
     }
@@ -111,8 +117,8 @@ const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailab
 
       {/* Main Content */}
       {overlay === 'none' && (
-        <Box flexDirection="row" marginTop={1}>
-          {/* Office Scene */}
+        <Box flexDirection="column" marginTop={1}>
+          {/* Office Scene - top half */}
           <Box flexDirection="column" flexGrow={1}>
             <Box>
               <Text bold color={focus === 'office' ? 'cyan' : 'white'}>Office</Text>
@@ -121,10 +127,8 @@ const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailab
             <AgentList />
           </Box>
 
-          <Box width={2} />
-          
-          {/* Chat Panel - larger */}
-          <Box width={48}>
+          {/* Chat Panel - bottom half, full width */}
+          <Box flexGrow={1} minHeight={15}>
             <ChatPanel isActive={focus === 'chat'} />
           </Box>
         </Box>
