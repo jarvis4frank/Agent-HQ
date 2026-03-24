@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { AgentState, Agent } from './agents/types'
 
+// Check Claude CLI availability (use pre-checked value from precheck.js)
+export function hasClaudeCli(): boolean {
+  return (globalThis as any).__CLAUDE_CLI_AVAILABLE__ ?? false
+}
+
 // Roles cycled when spawning new agents dynamically
 const AGENT_ROLES = ['researcher', 'coder', 'reviewer', 'executor', 'planner', 'tester'] as const
 const AGENT_NAMES = ['Researcher', 'Coder', 'Reviewer', 'Executor', 'Planner', 'Tester'] as const

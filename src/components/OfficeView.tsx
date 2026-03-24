@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
-import { useStore, createAgent } from '../store.js'
+import { useStore, createAgent, hasClaudeCli } from '../store.js'
 import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
 import AgentList from './AgentList.js'
 import ChatPanel from './ChatPanel.js'
@@ -9,7 +9,11 @@ import AgentConfigForm, { AgentFormValues } from './AgentConfigForm.js'
 type FocusArea = 'office' | 'chat'
 type OverlayMode = 'none' | 'add'
 
-const OfficeView: React.FC = () => {
+interface OfficeViewProps {
+  cliAvailable?: boolean
+}
+
+const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailable }) => {
   const agents = useStore((state) => state.agents)
   const selectedAgentId = useStore((state) => state.selectedAgentId)
   const selectAgent = useStore((state) => state.selectAgent)
@@ -21,17 +25,8 @@ const OfficeView: React.FC = () => {
   const [overlay, setOverlay] = useState<OverlayMode>('none')
 
   const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY)
-  const hasClaudeCli = (() => {
-    try {
-      require('child_process').execSync('claude --version', { stdio: 'ignore', shell: true })
-      console.log('[OfficeView] Claude CLI detected!')
-      return true
-    } catch {
-      console.log('[OfficeView] Claude CLI not found')
-      return false
-    }
-  })()
-  const isCliMode = hasClaudeCli || hasApiKey
+  const hasClaudeCliResult = initialCliAvailable ?? hasClaudeCli()
+  const isCliMode = hasClaudeCliResult || hasApiKey
 
   const handleAddAgent = (values: AgentFormValues): void => {
     const agent = createAgent({ name: values.name, role: values.role, config: values.config })

@@ -1,9 +1,16 @@
 import 'dotenv/config'
+
+// CRITICAL: Check Claude CLI availability BEFORE any other imports that might load Ink
+// This must be the FIRST import in the file
+import './precheck.js'
+
 import React, { useEffect, useRef } from 'react'
 import { render, Box } from 'ink'
-import OfficeView from './components/OfficeView'
-import { useStore } from './store'
+import { useStore, hasClaudeCli } from './store'
 import { ClaudeAdapter } from './agents/ClaudeAdapter'
+
+// Now import OfficeView (Ink loads after precheck)
+import OfficeView from './components/OfficeView'
 
 // Drives each initial agent on startup.
 // Uses SDK when ANTHROPIC_API_KEY is set (auto mode), otherwise mock.
@@ -49,7 +56,7 @@ const DemoController: React.FC = () => {
 const App: React.FC = () => (
   <Box flexDirection="column">
     <DemoController />
-    <OfficeView />
+    <OfficeView cliAvailable={hasClaudeCli()} />
   </Box>
 )
 
