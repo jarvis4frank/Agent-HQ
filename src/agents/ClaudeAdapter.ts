@@ -1,11 +1,17 @@
 import { spawn, ChildProcess } from 'child_process'
+import { config as loadEnv } from 'dotenv'
 import { useStore } from '../store.js'
 import { AgentStatus } from './types.js'
+
+// Load .env once at module level (no-op if already set or file absent)
+loadEnv()
 
 export interface ClaudeAdapterOptions {
   agentId: string
   claudePath?: string
   workDir?: string
+  /** Override API key. Falls back to ANTHROPIC_API_KEY env var. */
+  apiKey?: string
 }
 
 // Map output patterns to agent status + task label
@@ -21,6 +27,7 @@ export class ClaudeAdapter {
   private agentId: string
   private claudePath: string
   private workDir: string
+  private apiKey: string | undefined
   private process: ChildProcess | null = null
   private outputBuffer: string[] = []
 
@@ -28,6 +35,7 @@ export class ClaudeAdapter {
     this.agentId = options.agentId
     this.claudePath = options.claudePath ?? 'claude'
     this.workDir = options.workDir ?? process.cwd()
+    this.apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY
   }
 
   spawn(prompt: string): void {
@@ -35,9 +43,14 @@ export class ClaudeAdapter {
 
     this.updateAgent({ status: 'thinking', currentTask: 'Starting...' })
 
+    const env: NodeJS.ProcessEnv = { ...process.env }
+    if (this.apiKey) {
+      env.ANTHROPIC_API_KEY = this.apiKey
+    }
+
     this.process = spawn(this.claudePath, ['--print', prompt], {
       cwd: this.workDir,
-      env: process.env,
+      env,
     })
 
     this.process.stdout?.on('data', (data: Buffer) => {
@@ -99,6 +112,13 @@ export class ClaudeAdapter {
 
   getOutputBuffer(): readonly string[] {
     return this.outputBuffer
+  }
+
+  /**
+   * Returns true if an ANTHROPIC_API_KEY is available (option or env).
+   */
+  hasApiKey(): boolean {
+    return Boolean(this.apiKey)
   }
 
   /**

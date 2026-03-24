@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Box, Text, useInput, useApp } from 'ink'
-import { useStore } from '../store.js'
+import { useStore, createAgent } from '../store.js'
+import { ClaudeAdapter } from '../agents/ClaudeAdapter.js'
 import AgentList from './AgentList.js'
 import ChatPanel from './ChatPanel.js'
 
@@ -10,6 +11,8 @@ const OfficeView: React.FC = () => {
   const agents = useStore((state) => state.agents)
   const selectedAgentId = useStore((state) => state.selectedAgentId)
   const selectAgent = useStore((state) => state.selectAgent)
+  const addAgent = useStore((state) => state.addAgent)
+  const removeAgent = useStore((state) => state.removeAgent)
 
   const { exit } = useApp()
   const [focus, setFocus] = useState<FocusArea>('office')
@@ -25,6 +28,25 @@ const OfficeView: React.FC = () => {
     }
 
     if (focus === 'office') {
+      // Add agent
+      if (char === '+' || char === '=') {
+        const agent = createAgent()
+        addAgent(agent)
+        selectAgent(agent.id)
+        // Start mock simulation for the new agent
+        const adapter = new ClaudeAdapter({ agentId: agent.id })
+        adapter.startMockSimulation()
+        return
+      }
+
+      // Remove selected agent
+      if (char === '-' || char === '_') {
+        if (selectedAgentId && agents.length > 1) {
+          removeAgent(selectedAgentId)
+        }
+        return
+      }
+
       if (key.leftArrow || key.rightArrow || key.upArrow || key.downArrow) {
         const ids = agents.map((a) => a.id)
         const currentIdx = ids.indexOf(selectedAgentId ?? '')
@@ -53,7 +75,7 @@ const OfficeView: React.FC = () => {
         <Box flexDirection="column" flexGrow={1}>
           <Box>
             <Text bold color={focus === 'office' ? 'cyan' : 'white'}>Office</Text>
-            <Text color="dim">  {agents.length} agents  |  arrows: select agent  |  tab: switch panel  |  q: quit</Text>
+            <Text color="dim">  {agents.length} agents  |  arrows: select  |  +: add agent  |  -: remove  |  tab: switch panel  |  q: quit</Text>
           </Box>
           <AgentList />
         </Box>
@@ -65,7 +87,7 @@ const OfficeView: React.FC = () => {
       {/* Status Bar */}
       <Box borderStyle="single" paddingX={1}>
         <Text color="dim">
-          Selected: {selectedAgentId ?? 'none'} | Focus: {focus} | Tab: switch panel | Arrows: select agent | Q: quit
+          Selected: {selectedAgentId ?? 'none'} | Agents: {agents.length} | Focus: {focus} | Tab: switch panel | Arrows: select | +/-: add/remove | Q: quit
         </Text>
       </Box>
     </Box>
