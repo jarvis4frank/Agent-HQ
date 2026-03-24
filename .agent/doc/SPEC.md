@@ -11,6 +11,7 @@
 | **技術堆疊** | TypeScript + Ink (React-style CLI) |
 | **Agent 引擎** | Claude Code (Agent Team) |
 | **視覺風格** | Pixel Art RPG (參考 PIXELHQ / CraftPix.net) |
+| **設計原則** | **基於 Claude Code 介面，不額外疊加資訊** |
 
 ---
 
@@ -167,6 +168,8 @@ agent-hq/
 ```
 
 ### 3.3 Agent 整合
+
+> ⚠️ **重要設計原則**：Agent HQ 是 Claude Code 的**視覺化介面**，所有功能設計都應基於 Claude Code 本身提供的資訊，不額外疊加或詮釋。
 
 **Claude Code Agent Team**：
 - 透過 Claude Code 的 `--agents` 功能定義多個 Agent
