@@ -121,8 +121,12 @@ const OfficeView: React.FC<OfficeViewProps> = ({ cliAvailable: initialCliAvailab
             <AgentList />
           </Box>
 
-          {/* Chat Panel */}
-          <ChatPanel isActive={focus === 'chat'} />
+          <Box width={2} />
+          
+          {/* Chat Panel - larger */}
+          <Box width={48}>
+            <ChatPanel isActive={focus === 'chat'} />
+          </Box>
         </Box>
       )}
 
