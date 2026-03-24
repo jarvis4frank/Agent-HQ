@@ -2,6 +2,8 @@
 
 A terminal UI for visualizing a team of Claude Code agents. Each agent is displayed as an ASCII sprite with live status updates, and you can chat with any selected agent directly from the interface.
 
+> 📖 **中文使用說明**：請參考 [doc/usage.md](doc/usage.md)
+
 ## Installation
 
 ```bash
