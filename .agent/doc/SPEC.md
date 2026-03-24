@@ -10,7 +10,7 @@
 | **目標用戶** | 個人開發者、AI 愛好者 |
 | **技術堆疊** | TypeScript + Ink (React-style CLI) |
 | **Agent 引擎** | Claude Code (Agent Team) |
-| **視覺風格** | Pixel Art RPG (參考 Pixel HQ / CraftPix.net) |
+| **視覺風格** | Pixel Art RPG (參考 PIXELHQ / CraftPix.net) |
 
 ---
 
@@ -25,21 +25,23 @@
 
 #### 2.2.1 視覺設計概念
 
-**場景設計**：每個 Agent 有自己的「工作站」（像素風電腦桌場景）
+**場景設計**：每個 Agent 有自己的「工作站」（像素風辦公室電腦桌場景）
 
-**人物姿勢與動畫**：
+**人物姿勢與動畫（ MVP 優先策略）**：
 
-| 狀態 | 姿勢描述 | 頭上圖示 |
-|------|----------|----------|
-| **idle（閒置）** | 坐在電腦前，雙手敲打鍵盤 | 💤 打呼 / 無 |
-| **thinking（思考中）** | 坐著手托下巴思考 | 💭 思考氣泡 |
-| **working（工作中）** | 站起來面向螢幕，認真工作 | ⚡ 閃電 |
-| **error（錯誤）** | 雙手舉頭表示驚訝/無奈 | ❌ 錯誤標記 |
-| **waiting（等待回饋）** | 站立轉頭看使用者，頭上有驚嘆號 | ⚠️ 驚嘆號 |
+| 狀態 | 姿勢描述 | 頭上圖示 | 備註 |
+|------|----------|----------|------|
+| **idle（閒置）** | 站著或走動（用現成素材） | 💤 | MVP 用 walk/idle 姿勢 |
+| **thinking（思考中）** | 站著不動 | 💭 | |
+| **working（工作中）** | 走動/工作動畫 | ⚡ | |
+| **error（錯誤）** | hurt 姿勢 | ❌ | |
+| **waiting（等待回饋）** | idle + 圖示 | ⚠️ 驚嘆號 | 點擊可展開對話 |
+
+**備註**：目前使用現成素材的 idle/walk/run 姿勢表示狀態，後續可用 PixelLab.ai 生成「坐著打電腦」專屬姿勢。
 
 **視覺元素**：
 - 像素風人物角色（32x32 或 64x64）
-- 電腦桌場景（螢幕、鍵盤、滑鼠）
+- 辦公室場景（電腦桌、螢幕、鍵盤、滑鼠、椅子）
 - 狀態動畫過渡
 - 頭上對話氣泡/驚嘆號
 
@@ -73,7 +75,8 @@
 
 ### 2.5 MVP 優先
 - CLI-based TUI 即可
-- 不需要精美人物畫面
+- 使用現成素材的現成姿勢（idle/walk/run）表示狀態
+- 搭配頭上狀態圖示與文字標示
 - 重點在有趣、可互動的圖形化界面
 
 ---
@@ -89,7 +92,7 @@
 | UI Library | React | ^18.0.0 |
 | 類型定義 | @types/react | ^18 |
 | Agent 引擎 | Claude Code | 最新 |
-| 像素素材 | CraftPix.net 免費素材 | - |
+| 像素素材 | CraftPix.net 等免費素材 | - |
 
 ### 3.2 專案結構
 
@@ -108,7 +111,7 @@ agent-hq/
 │   │   ├── reviewer/
 │   │   └── executor/
 │   └── scenes/             # 場景圖
-│       └── computer-desk/
+│       └── office/         # 辦公室場景
 ├── src/
 │   ├── index.tsx           # 入口點
 │   ├── App.tsx             # 主應用 Component
@@ -141,9 +144,19 @@ agent-hq/
 
 ### 3.4 視覺素材來源
 
-- **CraftPix.net** 免費 2D 素材
-- **Universal LPC Spritesheet** 開源素材
-- 自行用 Piskel 或 PixelLab 製作
+#### 角色素材
+- **CraftPix.net** - 免費角色 Sprite Sheets (warrior, city man 等)
+- **Universal LPC Spritesheet** - 開源素材生成器 (https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/)
+- **PixelLab.ai** - AI 生成自訂姿勢（**預計後續**生成「坐著打電腦」專屬姿勢）
+
+#### 場景素材
+- **OpenGameArt** - Pixel Art Lab/Office Tiles (https://opengameart.org/content/pixel-art-laboffice-tiles)
+- **itch.io** - Free office pixel art, Pixel Office Asset Pack, KR Urban Modern Interiors Tileset
+
+#### MVP 實作策略
+- 第一階段使用現成素材的 idle/walk/run 姿勢表示狀態
+- 搭配頭上狀態圖示（💤💭⚡❌⚠️）和文字標示
+- 「坐著打電腦」姿勢預計**後續**用 PixelLab.ai 生成
 
 ---
 
@@ -154,7 +167,7 @@ agent-hq/
 1. 使用者輸入命令啟動 Agent HQ
 2. 系統載入 Agent 設定
 3. 初始化 Claude Code subprocess
-4. 顯示 RPG 風格工作場景
+4. 顯示 RPG 風格工作場景（像素辦公室）
 5. 每個 Agent 在自己的工作站在電腦前（idle 狀態）
 6. 使用者選擇 Agent 進行互動
 ```
@@ -165,39 +178,39 @@ agent-hq/
 2. 使用者點擊 Agent/驚嘆號 → 對話面板展開
 3. 使用者輸入訊息 → Agent 變為 thinking 狀態 💭
 4. Agent 回覆 → 狀態回到 working → idle
-5. 有錯誤 → Agent 雙手舉頭 ❌
+5. 有錯誤 → Agent 顯示 hurt 姿勢 ❌
 ```
 
 ### 4.3 狀態機
 
 ```
 ┌─────────┐
-│  idle   │ ← 默认状态，坐在电脑前
+│  idle   │ ← 預設狀態，使用 idle/walk 姿勢
 └────┬────┘
-     │ 收到新任务
+     │ 收到新任務
      ▼
 ┌─────────┐
-│ working │ ← 站起来工作
+│ working │ ← 使用 run 姿勢
 └────┬────┘
      │ 需要思考
      ▼
 ┌──────────┐
-│ thinking │ ← 坐着思考
+│ thinking │ ← 站著不動
 └────┬─────┘
      │ 完成
      ▼
 ┌─────────┐
 │  idle   │
 └────┬────┘
-     │ 需要用户反馈
+     │ 需要用戶回饋
      ▼
 ┌──────────┐
-│ waiting  │ ← 站着看用户，头上的!
+│ waiting  │ ← 站立，頭上有驚嘆號 ⚠️
 └────┬─────┘
-     │ 出错
+     │ 出錯
      ▼
 ┌────────┐
-│ error  │ ← 双手举头
+│ error  │ ← hurt 姿勢
 └───────┘
 ```
 
@@ -208,7 +221,7 @@ agent-hq/
 ### 5.1 功能驗收
 - [ ] 可同時顯示 3+ Agent 的狀態
 - [ ] 每個 Agent 有 RPG 風格像素視覺表示
-- [ ] 人物根據狀態變換姿勢動畫
+- [ ] 人物根據狀態變換姿勢動畫（使用現成素材）
 - [ ] 頭上顯示狀態圖示（驚嘆號、氣泡等）
 - [ ] 可選擇特定 Agent 對話
 - [ ] 主對話界面可展開/收起
@@ -249,7 +262,8 @@ agent-hq/
 
 | 風險 | 機率 | 影響 | 緩解措施 |
 |------|------|------|----------|
-| 像素素材取得 | 中 | 低 | 使用免費開源素材 |
+| 像素素材取得 | 低 | 低 | 使用免費開源素材（已有多個來源）|
+| 坐姿素材缺乏 | 中 | 低 | 預計後續用 PixelLab.ai 生成 |
 | Claude Code subprocess 整合困難 | 中 | 高 | 先用 Mock 資料開發 MVP |
 | Ink 動畫支援有限 | 中 | 中 | 使用文字動畫或預設圖示 |
 | 狀態同步問題 | 中 | 中 | 使用事件驅動架構 |
