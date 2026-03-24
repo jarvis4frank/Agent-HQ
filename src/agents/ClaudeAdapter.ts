@@ -70,6 +70,7 @@ export class ClaudeAdapter {
   spawn(prompt: string): void {
     this.kill()
     const mode = this.resolvedMode()
+    console.log(`[ClaudeAdapter] spawn() mode: ${mode}, prompt: ${prompt.slice(0, 30)}...`)
     if (mode === 'sdk') {
       this.spawnSdk(prompt)
     } else if (mode === 'cli') {
