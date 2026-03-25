@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node --import tsx dist/index.js",
+    "start:team": "node --import tsx dist/index.js --team",
     "dev": "tsx src/index.tsx </dev/null",
     "dev:team": "tsx src/index.tsx --team </dev/null",
     "test": "vitest run",

@@ -25,8 +25,11 @@ try {
 } catch (e) {}
 
 // Parse command line args for mode BEFORE importing store
+// Supports: --team, -t, or AGENT_HQ_MODE=team env var
 const args = process.argv.slice(2)
-const teamMode = args.includes('--team') || args.includes('-t')
+const teamArg = args.includes('--team') || args.includes('-t')
+const envMode = process.env.AGENT_HQ_MODE
+const teamMode = teamArg || envMode === 'team'
 
 // Import store and set mode
 import { useStore, hasClaudeCli, getAppMode, setAppMode, buildMainAgent, buildInitialAgents } from './store'
