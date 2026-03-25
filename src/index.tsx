@@ -5,17 +5,14 @@ import 'dotenv/config'
 import './precheck.js'
 
 // Fix Raw mode error: Try to make stdin look like a TTY
-// This handles the case when running with stdin redirected from /dev/null
 try {
   const stdin = process.stdin as any
   if (!stdin.isTTY) {
-    // Make isTTY return true to trick Ink
     Object.defineProperty(stdin, 'isTTY', {
       get: () => true,
       set: () => {},
       configurable: true
     })
-    // Add all missing methods that Ink expects
     if (typeof stdin.ref !== 'function') stdin.ref = () => {}
     if (typeof stdin.unref !== 'function') stdin.unref = () => {}
     if (typeof stdin.addListener !== 'function') stdin.addListener = () => stdin
@@ -27,21 +24,36 @@ try {
   }
 } catch (e) {}
 
+// Parse command line args for mode BEFORE importing store
+const args = process.argv.slice(2)
+const teamMode = args.includes('--team') || args.includes('-t')
+
+// Import store and set mode
+import { useStore, hasClaudeCli, getAppMode, setAppMode, buildMainAgent, buildInitialAgents } from './store'
+
+if (teamMode) {
+  setAppMode('session-agent-team')
+}
+
 import React, { useEffect, useRef } from 'react'
 import { render, Box } from 'ink'
-import { useStore, hasClaudeCli } from './store'
 import { ClaudeAdapter } from './agents/ClaudeAdapter'
-
-// Now import OfficeView (Ink loads after precheck)
 import OfficeView from './components/OfficeView'
+import TeamController from './components/TeamController'
 
-// Drives each initial agent on startup.
-// Uses SDK when ANTHROPIC_API_KEY is set (auto mode), otherwise mock.
+// Demo Controller - spawns agents based on mode
 const DemoController: React.FC = () => {
   const agents = useStore((state) => state.agents)
   const cleanupRef = useRef<Array<() => void>>([])
 
   useEffect(() => {
+    const mode = getAppMode()
+    
+    // In team mode, we don't auto-spawn agents
+    if (mode === 'session-agent-team') {
+      return
+    }
+
     const cancels = agents.map((agent, index) => {
       const adapter = new ClaudeAdapter({
         agentId: agent.id,
@@ -71,16 +83,21 @@ const DemoController: React.FC = () => {
       cleanupRef.current.forEach((stop) => stop())
       cleanupRef.current = []
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   return null
 }
 
-const App: React.FC = () => (
-  <Box flexDirection="column">
-    <DemoController />
-    <OfficeView cliAvailable={hasClaudeCli()} />
-  </Box>
-)
+const App: React.FC = () => {
+  const mode = getAppMode()
+  
+  return (
+    <Box flexDirection="column">
+      <DemoController />
+      {mode === 'session-agent-team' && <TeamController />}
+      <OfficeView cliAvailable={hasClaudeCli()} />
+    </Box>
+  )
+}
 
 render(<App />)

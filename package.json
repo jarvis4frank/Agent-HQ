@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node --import tsx dist/index.js",
     "dev": "tsx src/index.tsx </dev/null",
+    "dev:team": "tsx src/index.tsx --team </dev/null",
     "test": "vitest run",
     "test:watch": "vitest"
   },
