@@ -68,6 +68,11 @@ export function getInitialAgents(): Agent[] {
   return _appMode === 'session-agent-team' ? buildMainAgent() : buildInitialAgents()
 }
 
+/** Get initial selected agent ID based on mode */
+export function getInitialSelectedId(): string {
+  return _appMode === 'session-agent-team' ? 'main' : '1'
+}
+
 let _nextId = 100
 
 /** Create a new agent with an auto-assigned id, cycling through roles. */
@@ -86,7 +91,7 @@ export function createAgent(overrides: Partial<Omit<Agent, 'id'>> = {}): Agent {
 export const useStore = create<AgentState>((set, get) => ({
   agents: getInitialAgents(),
   messages: [],
-  selectedAgentId: 'main',
+  selectedAgentId: getInitialSelectedId(),
 
   setAppMode: (mode: AppMode) => {
     _appMode = mode
