@@ -46,9 +46,9 @@ function parseProjects(): Session[] {
               const filePath = join(projectDir, file);
               const fileStat = statSync(filePath);
               
-              // Only include recent sessions (last 24 hours)
+              // Only include recent sessions (last 48 hours)
               const age = Date.now() - fileStat.mtimeMs;
-              if (age < 24 * 60 * 60 * 1000) {
+              if (age < 48 * 60 * 60 * 1000) {
                 sessions.push({
                   id: file.replace('.jsonl', ''),
                   path: filePath,
