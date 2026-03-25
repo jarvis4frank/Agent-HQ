@@ -119,14 +119,67 @@ function createSession(workDir: string): Session | null {
   }
 }
 
-// Switch to an existing session
+// Switch to an existing session (or create PTY for existing directory)
 function switchToSession(sessionId: string, ws: WebSocket): boolean {
-  const session = sessions.get(sessionId)
-  if (session && session.pty) {
+  let session = sessions.get(sessionId)
+  
+  // If session doesn't exist in memory, check if it's an existing directory
+  if (!session) {
+    const allSessions = getAllSessions()
+    const existingSession = allSessions.find(s => s.id === sessionId)
+    
+    if (existingSession) {
+      // Create a new PTY for this existing session directory
+      try {
+        const ptyProcess = pty.spawn('claude', [], {
+          name: 'xterm-256color',
+          cols: 80,
+          rows: 24,
+          cwd: existingSession.workDir || homedir(),
+          env: process.env as { [key: string]: string },
+        })
+
+        session = {
+          ...existingSession,
+          status: 'active',
+          lastActivity: Date.now(),
+          pty: ptyProcess,
+          ws,
+        }
+
+        sessions.set(sessionId, session)
+
+        // Listen for PTY output
+        ptyProcess.onData((data: string) => {
+          if (session!.ws && session!.ws.readyState === WebSocket.OPEN) {
+            session!.ws.send(JSON.stringify({ type: 'terminal_output', data }))
+          }
+        })
+
+        ptyProcess.onExit(({ exitCode }) => {
+          session!.status = 'closed'
+          if (session!.ws && session!.ws.readyState === WebSocket.OPEN) {
+            session!.ws.send(JSON.stringify({ type: 'terminal_exit', data: exitCode.toString() }))
+          }
+        })
+
+        console.log(`Created PTY for existing session: ${sessionId}`)
+        return true
+      } catch (error) {
+        console.error('Failed to create PTY for session:', error)
+        return false
+      }
+    }
+    return false
+  }
+
+  // Session exists and has PTY
+  if (session.pty) {
     session.ws = ws
     session.lastActivity = Date.now()
     return true
   }
+  
   return false
 }
 
