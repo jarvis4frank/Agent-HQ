@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper node_modules/node-pty/prebuilds/darwin-arm64/pty.node 2>/dev/null || true",
     "dev": "tsx watch src/index.ts",
     "start": "node --import tsx dist/index.js",
     "build": "tsc"
