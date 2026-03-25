@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useStore } from '../store.js'
 import { startSessionMonitor, stopSessionMonitor, getActiveSessions } from '../agents/sessionMonitor.js'
 
-/** Session Controller - Monitors Claude Code sessions from ~/.claude/sessions/ */
+/** Session Controller - Monitors Claude Code sessions from ~/.claude/projects/ */
 export const SessionController: React.FC = () => {
   const syncSessions = useStore((state) => (state as any).syncSessions)
   const syncRef = useRef(syncSessions)
@@ -21,8 +21,9 @@ export const SessionController: React.FC = () => {
         id: s.id,
         status: s.status,
         lastActivity: s.lastActivity,
+        size: s.size,
       })))
-    }, 2000)
+    }, 3000)
 
     return () => {
       console.log('[SessionController] Stopping monitor')

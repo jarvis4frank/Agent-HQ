@@ -101,29 +101,34 @@ export const useStore = create<AgentState>((set, get) => ({
   },
 
   // Sync sessions from monitor
-  syncSessions: (sessions: Array<{ id: string; status: string; lastActivity: number }>) => {
+  syncSessions: (sessions: Array<{ id: string; status: string; lastActivity: number; size?: number }>) => {
     const state = get()
     
     if (_appMode !== 'monitor') return
+    
+    // Limit to recent sessions (max 10)
+    const recentSessions = sessions.slice(0, 10)
     
     // Convert sessions to agents
     const agents: Agent[] = [{
       id: 'system',
       name: 'Claude Observer',
       role: 'system',
-      status: sessions.length > 0 ? 'running' : 'idle',
+      status: recentSessions.length > 0 ? 'running' : 'idle',
+      currentTask: recentSessions.length > 0 ? `${recentSessions.length} sessions` : 'No active sessions',
       isMain: true,
     }]
     
     // Add each session as an agent
-    for (const session of sessions) {
+    for (const session of recentSessions) {
       const age = Date.now() - session.lastActivity
+      const sizeKB = session.size ? Math.round(session.size / 1024) : 0
       agents.push({
         id: session.id,
         name: session.id.slice(0, 12),
         role: 'session',
         status: session.status === 'active' ? 'running' : 'idle',
-        currentTask: age < 60000 ? 'Active' : age < 3600000 ? `${Math.floor(age/60000)}m ago` : `${Math.floor(age/3600000)}h ago`,
+        currentTask: `${sizeKB}KB · ${age < 60000 ? 'just now' : age < 3600000 ? Math.floor(age/60000)+'m ago' : Math.floor(age/3600000)+'h ago'}`,
         isMain: false,
       })
     }
