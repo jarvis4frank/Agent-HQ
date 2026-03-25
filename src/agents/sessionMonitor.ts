@@ -27,14 +27,24 @@ let pollInterval: NodeJS.Timeout | null = null;
 /** Parse project sessions from directory */
 function parseProjects(): Session[] {
   const sessions: Session[] = [];
+  const homeDir = process.env.HOME || process.env.USERPROFILE || ''
+  const projectsDir = join(homeDir, '.claude/projects');
   
-  if (!existsSync(CLAUDE_PROJECTS_DIR)) return sessions;
+  console.log('[SessionMonitor] HOME:', homeDir);
+  console.log('[SessionMonitor] Projects dir:', projectsDir);
+  console.log('[SessionMonitor] Dir exists:', existsSync(projectsDir));
+  
+  if (!existsSync(projectsDir)) {
+    console.log('[SessionMonitor] Projects directory not found!');
+    return sessions;
+  }
   
   try {
-    const dirs = readdirSync(CLAUDE_PROJECTS_DIR);
+    const dirs = readdirSync(projectsDir);
+    console.log('[SessionMonitor] Found', dirs.length, 'projects');
     
     for (const dir of dirs) {
-      const projectDir = join(CLAUDE_PROJECTS_DIR, dir);
+      const projectDir = join(projectsDir, dir);
       const stat = statSync(projectDir);
       
       if (stat.isDirectory()) {
