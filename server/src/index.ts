@@ -78,7 +78,7 @@ function createSession(workDir: string): Session | null {
     const sessionPath = join(CLAUDE_DIR, id)
 
     // Spawn Claude Code in PTY
-    const ptyProcess = pty.spawn('claude', [], {
+    const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
@@ -131,7 +131,7 @@ function switchToSession(sessionId: string, ws: WebSocket): boolean {
     if (existingSession) {
       // Create a new PTY for this existing session directory
       try {
-        const ptyProcess = pty.spawn('claude', [], {
+        const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
           name: 'xterm-256color',
           cols: 80,
           rows: 24,
