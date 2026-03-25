@@ -1,6 +1,6 @@
 // Agent HQ - Core Types
 
-export type AgentStatus = 'idle' | 'thinking' | 'working' | 'error' | 'waiting'
+export type AgentStatus = 'idle' | 'running' | 'thinking' | 'working' | 'error' | 'waiting'
 
 export interface Message {
   id: string

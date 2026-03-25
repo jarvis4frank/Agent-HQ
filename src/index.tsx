@@ -1,10 +1,9 @@
 import 'dotenv/config'
 
 // CRITICAL: Check Claude CLI availability BEFORE any other imports that might load Ink
-// This must be the FIRST import in the file
 import './precheck.js'
 
-// Fix Raw mode error: Try to make stdin look like a TTY
+// Fix Raw mode error
 try {
   const stdin = process.stdin as any
   if (!stdin.isTTY) {
@@ -24,79 +23,33 @@ try {
   }
 } catch (e) {}
 
-// Parse command line args for mode BEFORE importing store
-// Supports: --team, -t, or AGENT_HQ_MODE=team env var
+// Parse command line args for mode
 const args = process.argv.slice(2)
 const teamArg = args.includes('--team') || args.includes('-t')
 const envMode = process.env.AGENT_HQ_MODE
 const teamMode = teamArg || envMode === 'team'
 
 // Import store and set mode
-import { useStore, hasClaudeCli, getAppMode, setAppMode, buildMainAgent, buildInitialAgents } from './store'
+import { useStore, hasClaudeCli, getAppMode, setAppMode } from './store'
 
 if (teamMode) {
   setAppMode('session-agent-team')
+} else {
+  setAppMode('monitor') // Default: monitor mode
 }
 
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 import { render, Box } from 'ink'
-import { ClaudeAdapter } from './agents/ClaudeAdapter'
 import OfficeView from './components/OfficeView'
+import SessionController from './components/SessionController'
 import TeamController from './components/TeamController'
-
-// Demo Controller - spawns agents based on mode
-const DemoController: React.FC = () => {
-  const agents = useStore((state) => state.agents)
-  const cleanupRef = useRef<Array<() => void>>([])
-
-  useEffect(() => {
-    const mode = getAppMode()
-    
-    // In team mode, we don't auto-spawn agents
-    if (mode === 'session-agent-team') {
-      return
-    }
-
-    const cancels = agents.map((agent, index) => {
-      const adapter = new ClaudeAdapter({
-        agentId: agent.id,
-        mode: agent.config?.mode ?? 'auto',
-        workDir: agent.config?.workDir,
-        systemPrompt: agent.config?.systemPrompt,
-      })
-
-      const delay = index * 1200
-      const timer = setTimeout(() => {
-        const prompt = agent.config?.initialPrompt
-          ?? `You are a ${agent.role} agent. Briefly describe what you are working on right now in one sentence.`
-
-        if (adapter.getResolvedMode() === 'mock') {
-          const stop = adapter.startMockSimulation()
-          cleanupRef.current.push(stop)
-        } else {
-          adapter.spawn(prompt)
-        }
-      }, delay)
-
-      return () => clearTimeout(timer)
-    })
-
-    return () => {
-      cancels.forEach((cancel) => cancel())
-      cleanupRef.current.forEach((stop) => stop())
-      cleanupRef.current = []
-    }
-  }, [])
-
-  return null
-}
 
 const App: React.FC = () => {
   const mode = getAppMode()
   
   return (
     <Box flexDirection="column">
-      <DemoController />
+      {mode === 'monitor' && <SessionController />}
       {mode === 'session-agent-team' && <TeamController />}
       <OfficeView cliAvailable={hasClaudeCli()} />
     </Box>

@@ -22,6 +22,7 @@ interface AgentSpriteProps {
 const STATUS_FRAMES: Record<AgentStatus, string[]> = {
   idle: [' ', '  '],
   thinking: ['💭', ' '],
+  running: ["🔄", "  "],
   working: ['⚡', '⚡'],
   error: ['❌', '❗'],
   waiting: ['⚠️', ' '],

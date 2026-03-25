@@ -7,7 +7,7 @@ export function hasClaudeCli(): boolean {
 }
 
 // App modes
-export type AppMode = 'multi-agent' | 'session-agent-team'
+export type AppMode = 'monitor' | 'session-agent-team'
 
 // Usage tracking
 let _totalTokens: number = 0
@@ -23,7 +23,7 @@ export function addUsage(tokens: number): void {
 }
 
 // Current app mode
-let _appMode: AppMode = 'multi-agent'
+let _appMode: AppMode = 'monitor'
 
 export function getAppMode(): AppMode {
   return _appMode
@@ -31,58 +31,59 @@ export function getAppMode(): AppMode {
 
 export function setAppMode(mode: AppMode): void {
   _appMode = mode
-  // Also update store if it exists
   const store = useStore.getState()
   if (typeof (store as any).setAppMode === 'function') {
     (store as any).setAppMode(mode)
   }
 }
 
-// Roles cycled when spawning new agents dynamically
-const AGENT_ROLES = ['researcher', 'coder', 'reviewer', 'executor', 'planner', 'tester'] as const
-const AGENT_NAMES = ['Researcher', 'Coder', 'Reviewer', 'Executor', 'Planner', 'Tester'] as const
+// Roles for session agents
+const SESSION_ROLES = ['researcher', 'coder', 'reviewer', 'executor', 'planner', 'tester'] as const
+const SESSION_NAMES = ['Researcher', 'Coder', 'Reviewer', 'Executor', 'Planner', 'Tester'] as const
 
-export function buildInitialAgents(): Agent[] {
-  const count = Math.max(1, Math.min(10, Number(process.env.AGENT_COUNT ?? 4)))
-  return Array.from({ length: count }, (_, i) => ({
-    id: String(i + 1),
-    name: AGENT_NAMES[i % AGENT_NAMES.length],
-    role: AGENT_ROLES[i % AGENT_ROLES.length],
-    status: 'idle' as const,
-    isMain: i === 0,
-  }))
+/** Build initial monitoring agents */
+function buildMonitoringAgents(): Agent[] {
+  // In monitor mode, show system status
+  return [{
+    id: 'system',
+    name: 'Claude Observer',
+    role: 'system',
+    status: 'idle',
+    isMain: true,
+  }]
 }
 
-export function buildMainAgent(): Agent[] {
+/** Build single main agent for session-agent-team mode */
+function buildMainAgent(): Agent[] {
   return [{
     id: 'main',
     name: 'Researcher',
     role: 'researcher',
-    status: 'idle' as const,
+    status: 'idle',
     isMain: true,
   }]
 }
 
 /** Get initial agents based on mode */
 export function getInitialAgents(): Agent[] {
-  return _appMode === 'session-agent-team' ? buildMainAgent() : buildInitialAgents()
+  return _appMode === 'session-agent-team' ? buildMainAgent() : buildMonitoringAgents()
 }
 
-/** Get initial selected agent ID based on mode */
+/** Get initial selected agent ID */
 export function getInitialSelectedId(): string {
-  return _appMode === 'session-agent-team' ? 'main' : '1'
+  return 'system'
 }
 
 let _nextId = 100
 
-/** Create a new agent with an auto-assigned id, cycling through roles. */
+/** Create a new agent */
 export function createAgent(overrides: Partial<Omit<Agent, 'id'>> = {}): Agent {
-  const idx = _nextId % AGENT_ROLES.length
+  const idx = _nextId % SESSION_ROLES.length
   const id = String(_nextId++)
   return {
     id,
-    name: AGENT_NAMES[idx],
-    role: AGENT_ROLES[idx],
+    name: SESSION_NAMES[idx],
+    role: SESSION_ROLES[idx],
     status: 'idle',
     ...overrides,
   }
@@ -95,18 +96,48 @@ export const useStore = create<AgentState>((set, get) => ({
 
   setAppMode: (mode: AppMode) => {
     _appMode = mode
-    const agents = mode === 'session-agent-team' ? buildMainAgent() : buildInitialAgents()
-    set({ agents, selectedAgentId: 'main' })
+    const agents = mode === 'session-agent-team' ? buildMainAgent() : buildMonitoringAgents()
+    set({ agents, selectedAgentId: 'system' })
   },
 
+  // Sync sessions from monitor
+  syncSessions: (sessions: Array<{ id: string; status: string; lastActivity: number }>) => {
+    const state = get()
+    
+    if (_appMode !== 'monitor') return
+    
+    // Convert sessions to agents
+    const agents: Agent[] = [{
+      id: 'system',
+      name: 'Claude Observer',
+      role: 'system',
+      status: sessions.length > 0 ? 'running' : 'idle',
+      isMain: true,
+    }]
+    
+    // Add each session as an agent
+    for (const session of sessions) {
+      const age = Date.now() - session.lastActivity
+      agents.push({
+        id: session.id,
+        name: session.id.slice(0, 12),
+        role: 'session',
+        status: session.status === 'active' ? 'running' : 'idle',
+        currentTask: age < 60000 ? 'Active' : age < 3600000 ? `${Math.floor(age/60000)}m ago` : `${Math.floor(age/3600000)}h ago`,
+        isMain: false,
+      })
+    }
+    
+    set({ agents })
+  },
+
+  // Sync teams from TeamController
   syncWithTeams: (teamMembers: Array<{ id: string; name: string; role: string }>) => {
     const state = get()
-    const mode = _appMode
     
-    if (mode !== 'session-agent-team') return // Only sync in team mode
+    if (_appMode !== 'session-agent-team') return
     
-    // Keep main agent, add/update teammates
-    const mainAgent = state.agents.find(a => a.isMain) || buildMainAgent()[0]
+    const mainAgent = buildMainAgent()[0]
     const teammates = teamMembers
       .filter(m => m.role !== 'lead')
       .map(m => ({
@@ -128,7 +159,7 @@ export const useStore = create<AgentState>((set, get) => ({
 
   removeAgent: (id) => set((state) => ({
     agents: state.agents.filter((a) => a.id !== id),
-    selectedAgentId: state.selectedAgentId === id ? 'main' : state.selectedAgentId,
+    selectedAgentId: state.selectedAgentId === id ? 'system' : state.selectedAgentId,
   })),
 
   updateAgent: (id, updates) => set((state) => ({

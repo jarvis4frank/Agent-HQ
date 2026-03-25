@@ -62,6 +62,7 @@ export function getSpriteForRole(role: string): string[] {
 export const STATUS_COLORS: Record<AgentStatus, string> = {
   idle: 'gray',
   thinking: 'yellow',
+  running: 'blue',
   working: 'green',
   error: 'red',
   waiting: 'blue',
@@ -78,6 +79,7 @@ export function getColorForStatus(status: AgentStatus): string {
 export const STATUS_LABELS: Record<AgentStatus, string> = {
   idle: ' IDLE ',
   thinking: ' THINK',
+  running: ' RUN  ',
   working: ' WORK ',
   error: ' ERR  ',
   waiting: ' WAIT ',
@@ -94,6 +96,7 @@ export function getLabelForStatus(status: AgentStatus): string {
 export const STATUS_ICONS: Record<AgentStatus, string> = {
   idle: '💤',
   thinking: '💭',
+  running: '🔄',
   working: '⚡',
   error: '❌',
   waiting: '⚠️',
