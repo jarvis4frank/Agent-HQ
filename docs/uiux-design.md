@@ -34,7 +34,7 @@ Terminal 為主（≥50%）| Agent Panel 配合 Terminal 調整
 │  │                                                     │ │
 │  └─────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────┤
-│  [▶ Terminal]                              [Session] ●  │
+│  [▶ Terminal]                              [Project] ●  │
 └─────────────────────────────────────────────────────────┘
 
 模式 2: Terminal 50% + Agent 50%
@@ -62,7 +62,7 @@ Terminal 為主（≥50%）| Agent Panel 配合 Terminal 調整
 │  │                                                     │ │
 │  └─────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────┤
-│  [⛶ Exit]                                    [Session] ● │
+│  [⛶ Exit]                                    [Project] ● │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -94,14 +94,14 @@ Terminal 為主（≥50%）| Agent Panel 配合 Terminal 調整
 | 元件 | 說明 |
 |------|------|
 | Logo | 左側 |
-| Session Selector | 中央 |
+| **Project Selector** | 中央（取代 Project Selector） |
 | Terminal 控制 | 右側：[-] [50%] [⛶] |
 
 ### Status Bar
 
 | 顯示 | 說明 |
 |------|------|
-| Session ID | 左 |
+| **Project 名稱** | 左 |
 | 連線狀態 | 中 (● 綠/○ 灰) |
 | Agent 數量 | 右 |
 
@@ -135,7 +135,7 @@ Terminal 為主（≥50%）| Agent Panel 配合 Terminal 調整
 | 項目 | 原因 |
 |------|------|
 | Agent Panel 收合按鈕 | 多餘，透過 Terminal 控制即可 |
-| New Session 按鈕 | 放入 Session Selector dropdown |
+| New Project 按鈕 | 放入 Project Selector dropdown |
 | Settings 圖示 | 目前無功能 |
 | Agent 數量 badge | Status Bar 已有 |
 
