@@ -1,32 +1,21 @@
 {
   "name": "agent-hq",
   "version": "1.0.0",
-  "description": "Agent HQ - Claude Code Agent Team Visualization Interface",
-  "main": "dist/index.js",
-  "type": "module",
+  "description": "Agent HQ - Web-based Claude Code Agent Team Visualization",
+  "private": true,
+  "workspaces": [
+    "web",
+    "server"
+  ],
   "scripts": {
-    "build": "tsc",
-    "start": "node --import tsx dist/index.js",
-    "start:team": "node --import tsx dist/index.js --team",
-    "dev": "tsx src/index.tsx",
-    "dev:team": "tsx src/index.tsx --team",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
-    "dotenv": "^17.3.1",
-    "ink": "^6.8.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^19.2.4",
-    "zustand": "^5.0.12"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+    "dev:web": "cd web && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "cd web && npm run build",
+    "build:server": "cd server && npm run build"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "@vitest/coverage-v8": "^4.1.1",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.1"
+    "concurrently": "^9.1.0"
   }
 }
