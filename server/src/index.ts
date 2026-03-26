@@ -327,6 +327,7 @@ wss.on('connection', (ws) => {
 
   let currentSessionId: string | null = null
   let session: Session | null = null
+  let agentPollInterval: NodeJS.Timeout | null = null
 
   // Send connection status - waiting for session selection
   ws.send(JSON.stringify({ type: 'connection_status', status: 'waiting', sessionId: null }))
@@ -364,6 +365,14 @@ wss.on('connection', (ws) => {
 
             sessions.set(msg.sessionId, session)
 
+            // Start periodic agent updates
+            const agentPollInterval = setInterval(() => {
+              if (ws.readyState === WebSocket.OPEN && session?.workDir) {
+                const agents = extractAgentsFromSessions(session.workDir)
+                ws.send(JSON.stringify({ type: 'agents_update', agents }))
+              }
+            }, 5000) // Poll every 5 seconds
+
             // Send terminal output to WebSocket
             ptyProcess.onData((data: string) => {
               if (ws.readyState === WebSocket.OPEN) {
@@ -381,6 +390,10 @@ wss.on('connection', (ws) => {
             })
 
             ws.send(JSON.stringify({ type: 'connection_status', status: 'connected', sessionId: msg.sessionId }))
+
+            // Send agents for this session
+            const agents = extractAgentsFromSessions(msg.sessionId)
+            ws.send(JSON.stringify({ type: 'agents_update', agents }))
           }
           break
 
@@ -405,6 +418,10 @@ wss.on('connection', (ws) => {
             if (session?.pty) {
               session.pty.kill()
             }
+            // Clear existing poll interval
+            if (agentPollInterval) {
+              clearInterval(agentPollInterval)
+            }
 
             const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
               name: 'xterm-256color',
@@ -428,6 +445,14 @@ wss.on('connection', (ws) => {
 
             sessions.set(msg.sessionId, session)
 
+            // Start periodic agent updates
+            agentPollInterval = setInterval(() => {
+              if (ws.readyState === WebSocket.OPEN && session?.workDir) {
+                const agents = extractAgentsFromSessions(session.workDir)
+                ws.send(JSON.stringify({ type: 'agents_update', agents }))
+              }
+            }, 5000)
+
             ptyProcess.onData((data: string) => {
               if (ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'terminal_output', data }))
@@ -442,6 +467,10 @@ wss.on('connection', (ws) => {
             })
 
             ws.send(JSON.stringify({ type: 'connection_status', status: 'connected', sessionId: msg.sessionId }))
+
+            // Send agents for this session
+            const agents = extractAgentsFromSessions(msg.sessionId)
+            ws.send(JSON.stringify({ type: 'agents_update', agents }))
           }
           break
       }
@@ -452,6 +481,9 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('[WS] Client disconnected')
+    if (agentPollInterval) {
+      clearInterval(agentPollInterval)
+    }
     if (session?.pty) {
       session.pty.kill()
     }
