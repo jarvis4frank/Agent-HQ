@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
 import styles from './TerminalPanel.module.css'
@@ -12,7 +12,6 @@ export default function TerminalPanel() {
   const xtermRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const [isExpanded, setIsExpanded] = useState(true)
-  const [isConnecting, setIsConnecting] = useState(false)
   const sendInputRef = useRef<(data: string) => void>(() => {})
 
   const { connectionStatus, setTerminalExpanded } = useAppStore()
@@ -53,7 +52,6 @@ export default function TerminalPanel() {
     subscribeToTerminal(
       (data) => {
         terminal.write(data)
-        setIsConnecting(false)
       },
       (exitCode) => {
         terminal.write(`\r\n\x1b[33m[Process exited with code ${exitCode}]\x1b[0m\r\n`)
@@ -97,13 +95,6 @@ export default function TerminalPanel() {
     }
   }, [sendInput])
 
-  // Update connecting state based on connection status
-  useEffect(() => {
-    if (connectionStatus === 'connecting') {
-      setIsConnecting(true)
-    }
-  }, [connectionStatus])
-
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded)
     setTerminalExpanded(!isExpanded)
@@ -129,12 +120,6 @@ export default function TerminalPanel() {
 
       {isExpanded && (
         <div className={styles.terminalWrapper}>
-          {isConnecting && (
-            <div className={styles.connectingOverlay}>
-              <Loader2 size={24} className={styles.spinner} />
-              <span>Connecting to Claude Code...</span>
-            </div>
-          )}
           <div ref={terminalRef} className={styles.terminal} />
         </div>
       )}

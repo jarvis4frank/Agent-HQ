@@ -5,8 +5,8 @@ import { useWebSocket } from '../hooks/useWebSocket'
 import styles from './NewSessionModal.module.css'
 
 export default function NewSessionModal() {
-  const { setShowNewSessionModal, setCurrentSession } = useAppStore()
-  const { createSession } = useWebSocket()
+  const { setShowNewSessionModal, setCurrentSession, sessions } = useAppStore()
+  const { switchSession } = useWebSocket()
 
   const [workDir, setWorkDir] = useState('')
   const [initialPrompt, setInitialPrompt] = useState('')
@@ -58,8 +58,26 @@ export default function NewSessionModal() {
     setError('')
 
     try {
-      const sessionId = await createSession(workDir, initialPrompt.trim() || undefined)
-      setCurrentSession(sessionId)
+      // Check if workDir already exists in sessions (as an existing project)
+      const existingSession = sessions.find(s => s.workDir === workDir)
+      if (existingSession) {
+        // Switch to existing session directly
+        setCurrentSession(existingSession.id)
+        switchSession(workDir)
+      } else {
+        // Create new session via API then switch
+        const res = await fetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workDir, initialPrompt: initialPrompt.trim() || undefined }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Failed to create session' }))
+          throw new Error(err.error || 'Failed to create session')
+        }
+        // Switch to the new workDir - findOrCreateSession will handle it
+        switchSession(workDir)
+      }
       setShowNewSessionModal(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create session')

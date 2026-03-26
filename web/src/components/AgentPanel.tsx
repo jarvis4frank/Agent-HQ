@@ -1,4 +1,5 @@
-import { Bot, Zap, Brain, Clock, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, Zap, Brain, Clock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import type { Agent, AgentStatus } from '../types'
 import styles from './AgentPanel.module.css'
@@ -91,42 +92,54 @@ function AgentCard({ agent, isSelected, onClick }: AgentCardProps) {
 
 export default function AgentPanel() {
   const { agents, selectedAgentId, selectAgent, connectionStatus } = useAppStore()
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const toggleCollapsed = () => {
+    setIsCollapsed(!isCollapsed)
+  }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.header}>
         <span className={styles.title}>Agents</span>
-        <span className={styles.count}>{agents.length}</span>
+        <div className={styles.headerRight}>
+          <span className={styles.count}>{agents.length}</span>
+          <button className={styles.collapseBtn} onClick={toggleCollapsed}>
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </button>
+        </div>
       </div>
 
-      <div className={styles.content}>
-        {connectionStatus !== 'connected' && (
-          <div className={styles.emptyState}>
-            <Bot size={48} className={styles.emptyIcon} />
-            <p>Connect to a session to see agents</p>
-          </div>
-        )}
+      {!isCollapsed && (
+        <div className={styles.content}>
+          {connectionStatus !== 'connected' && (
+            <div className={styles.emptyState}>
+              <Bot size={48} className={styles.emptyIcon} />
+              <p>Connect to a session to see agents</p>
+            </div>
+          )}
 
-        {connectionStatus === 'connected' && agents.length === 0 && (
-          <div className={styles.emptyState}>
-            <Bot size={48} className={styles.emptyIcon} />
-            <p>No agents in this session</p>
-          </div>
-        )}
+          {connectionStatus === 'connected' && agents.length === 0 && (
+            <div className={styles.emptyState}>
+              <Bot size={48} className={styles.emptyIcon} />
+              <p>No agents in this session</p>
+            </div>
+          )}
 
-        {agents.length > 0 && (
-          <div className={styles.grid}>
-            {agents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                isSelected={agent.id === selectedAgentId}
-                onClick={() => selectAgent(agent.id === selectedAgentId ? null : agent.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          {agents.length > 0 && (
+            <div className={styles.grid}>
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  isSelected={agent.id === selectedAgentId}
+                  onClick={() => selectAgent(agent.id === selectedAgentId ? null : agent.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
