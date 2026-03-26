@@ -102,8 +102,8 @@ export default function TerminalPanel() {
   if (!isVisible) return null
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
+    <div className={`${styles.container} terminal-panel`}>
+      <div className={`${styles.header} header`}>
         <span className={styles.title}>Terminal</span>
         <div className={styles.headerRight}>
           <span className={`${styles.statusDot} ${styles[connectionStatus]}`} />

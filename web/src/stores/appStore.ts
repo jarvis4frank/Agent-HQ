@@ -58,11 +58,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   connectionStatus: 'disconnected',
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
-  // Terminal
+  // Terminal - default to 'half' to show Terminal on load
   terminalMode: 'half',
-  setTerminalMode: (mode) => set({ terminalMode: mode }),
+  setTerminalMode: (mode) => {
+    console.log('[Store] setTerminalMode:', mode)
+    set({ terminalMode: mode })
+  },
   toggleTerminal: () => {
     const current = get().terminalMode
+    console.log('[Store] toggleTerminal:', current)
     if (current === 'collapsed') set({ terminalMode: 'half' })
     else if (current === 'half') set({ terminalMode: 'full' })
     else set({ terminalMode: 'collapsed' })
