@@ -1,8 +1,8 @@
 import { create } from 'zustand'
-import type { Agent, Session, ConnectionStatus } from '../types'
+import type { Agent, Project, ConnectionStatus } from '../types'
 
-// Helper to fetch sessions from API
-async function fetchSessionsFromApi(): Promise<Session[]> {
+// Helper to fetch projects from API
+async function fetchProjectsFromApi(): Promise<Project[]> {
   try {
     const res = await fetch('/api/sessions')
     if (!res.ok) return []
@@ -14,12 +14,12 @@ async function fetchSessionsFromApi(): Promise<Session[]> {
 }
 
 interface AppState {
-  // Sessions
-  sessions: Session[]
-  currentSessionId: string | null
-  setSessions: (sessions: Session[]) => void
-  setCurrentSession: (sessionId: string | null) => void
-  fetchSessions: () => Promise<void>
+  // Projects
+  projects: Project[]
+  currentProjectId: string | null
+  setProjects: (projects: Project[]) => void
+  setCurrentProject: (projectId: string | null) => void
+  fetchProjects: () => Promise<void>
 
   // Agents
   agents: Agent[]
@@ -32,25 +32,20 @@ interface AppState {
   setConnectionStatus: (status: ConnectionStatus) => void
 
   // Terminal
-  terminalExpanded: boolean
-  setTerminalExpanded: (expanded: boolean) => void
-
-  // UI
-  showNewSessionModal: boolean
-  setShowNewSessionModal: (show: boolean) => void
-  showSessionSelector: boolean
-  setShowSessionSelector: (show: boolean) => void
+  terminalMode: 'collapsed' | 'half' | 'full'
+  setTerminalMode: (mode: 'collapsed' | 'half' | 'full') => void
+  toggleTerminal: () => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  // Sessions
-  sessions: [],
-  currentSessionId: null,
-  setSessions: (sessions) => set({ sessions }),
-  setCurrentSession: (sessionId) => set({ currentSessionId: sessionId }),
-  fetchSessions: async () => {
-    const sessions = await fetchSessionsFromApi()
-    set({ sessions })
+export const useAppStore = create<AppState>((set, get) => ({
+  // Projects
+  projects: [],
+  currentProjectId: null,
+  setProjects: (projects) => set({ projects }),
+  setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
+  fetchProjects: async () => {
+    const projects = await fetchProjectsFromApi()
+    set({ projects })
   },
 
   // Agents
@@ -64,12 +59,12 @@ export const useAppStore = create<AppState>((set) => ({
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
   // Terminal
-  terminalExpanded: false,
-  setTerminalExpanded: (expanded) => set({ terminalExpanded: expanded }),
-
-  // UI
-  showNewSessionModal: false,
-  setShowNewSessionModal: (show) => set({ showNewSessionModal: show }),
-  showSessionSelector: false,
-  setShowSessionSelector: (show) => set({ showSessionSelector: show }),
+  terminalMode: 'half',
+  setTerminalMode: (mode) => set({ terminalMode: mode }),
+  toggleTerminal: () => {
+    const current = get().terminalMode
+    if (current === 'collapsed') set({ terminalMode: 'half' })
+    else if (current === 'half') set({ terminalMode: 'full' })
+    else set({ terminalMode: 'collapsed' })
+  },
 }))

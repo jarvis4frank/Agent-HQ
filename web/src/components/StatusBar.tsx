@@ -2,19 +2,22 @@ import { Bot } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import styles from './StatusBar.module.css'
 
+function getProjectName(path: string): string {
+  const parts = path.split('/')
+  return parts[parts.length - 1] || path
+}
+
 export default function StatusBar() {
-  const { currentSessionId, connectionStatus, agents } = useAppStore()
+  const { currentProjectId, projects, connectionStatus, agents } = useAppStore()
+
+  const currentProject = projects.find(p => p.id === currentProjectId)
 
   const getStatusLabel = (status: typeof connectionStatus) => {
     switch (status) {
-      case 'connected':
-        return 'Connected'
-      case 'connecting':
-        return 'Connecting...'
-      case 'disconnected':
-        return 'Disconnected'
-      case 'error':
-        return 'Error'
+      case 'connected': return 'Connected'
+      case 'connecting': return 'Connecting...'
+      case 'disconnected': return 'Disconnected'
+      case 'error': return 'Error'
     }
   }
 
@@ -22,13 +25,13 @@ export default function StatusBar() {
     <div className={styles.container}>
       <div className={styles.left}>
         <div className={styles.sessionInfo}>
-          {currentSessionId ? (
+          {currentProject ? (
             <>
-              <span>Session:</span>
-              <span className={styles.sessionId}>{currentSessionId.slice(0, 8)}...</span>
+              <span>Project:</span>
+              <span className={styles.sessionId}>{getProjectName(currentProject.path)}</span>
             </>
           ) : (
-            <span>No session selected</span>
+            <span>No project selected</span>
           )}
         </div>
       </div>

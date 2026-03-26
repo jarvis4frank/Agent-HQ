@@ -92,3 +92,50 @@ input:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ============= Terminal-first Layout ============= */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-primary);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 16px;
+  gap: 16px;
+}
+
+/* Terminal modes - terminal-first design */
+
+/* Collapsed: Agent 100%, Terminal hidden */
+.app.terminal-collapsed .terminal-panel {
+  display: none;
+}
+.app.terminal-collapsed .agent-panel {
+  width: 100%;
+}
+
+/* Half: Agent 50%, Terminal 50% */
+.app.terminal-half .agent-panel,
+.app.terminal-half .terminal-panel {
+  width: 50%;
+}
+
+/* Full: Terminal 100%, Agent hidden */
+.app.terminal-full .agent-panel {
+  display: none;
+}
+.app.terminal-full .terminal-panel {
+  width: 100%;
+}
+
+/* Smooth transitions */
+.agent-panel,
+.terminal-panel {
+  transition: width var(--transition-slow), opacity var(--transition-normal);
+}

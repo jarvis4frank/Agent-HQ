@@ -21,8 +21,8 @@ export interface Message {
   role: 'user' | 'agent'
 }
 
-// Session interface
-export interface Session {
+// Project interface (replaces Session)
+export interface Project {
   id: string
   path: string
   status: 'active' | 'closed'

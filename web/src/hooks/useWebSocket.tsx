@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useCallback, useState } from 'react'
+import { createContext, useContext, useRef, useCallback, useState } from 'react'
 import { useAppStore } from '../stores/appStore'
 import type { WSMessage } from '../types'
 
@@ -27,7 +27,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const terminalExitBufferRef = useRef<number[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 
-  const { setConnectionStatus, setAgents, setCurrentSession } = useAppStore()
+  const { setConnectionStatus, setAgents, setCurrentProject } = useAppStore()
 
   const connect = useCallback((sessionIdOverride?: string) => {
     console.log('[WS] connect called with override:', sessionIdOverride)
@@ -87,7 +87,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
           case 'connection_status':
             setConnectionStatus(msg.status || 'disconnected')
             if (msg.sessionId) {
-              setCurrentSession(msg.sessionId)
+              setCurrentProject(msg.sessionId)
             }
             break
         }
@@ -107,14 +107,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       isConnectingRef.current = false
       setConnectionStatus('error')
     }
-  }, [currentSessionId, setConnectionStatus, setAgents, setCurrentSession])
-
-  const disconnect = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
-  }, [])
+  }, [currentSessionId, setConnectionStatus, setAgents, setCurrentProject])
 
   const sendInput = useCallback((data: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -147,7 +140,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const switchSession = useCallback((sessionId: string) => {
     console.log('[WS] switchSession called:', sessionId)
-    setCurrentSession(sessionId)
+    setCurrentProject(sessionId)
     setCurrentSessionId(sessionId)
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -157,7 +150,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       console.log('[WS] Not connected, calling connect')
       connect(sessionId)
     }
-  }, [setCurrentSession, connect])
+  }, [setCurrentProject, connect])
 
   const createSession = useCallback(async (workDir: string, initialPrompt?: string): Promise<string> => {
     const res = await fetch('/api/sessions', {

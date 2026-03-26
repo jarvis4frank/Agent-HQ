@@ -5,33 +5,31 @@ import Header from './components/Header'
 import TerminalPanel from './components/TerminalPanel'
 import AgentPanel from './components/AgentPanel'
 import StatusBar from './components/StatusBar'
-import NewSessionModal from './components/NewSessionModal'
 import './styles/globals.css'
 
 function AppContent() {
-  const { showNewSessionModal, fetchSessions } = useAppStore()
+  const { fetchProjects, terminalMode } = useAppStore()
   const { reconnect } = useWebSocket()
 
-  // Fetch sessions on mount
+  // Fetch projects on mount
   useEffect(() => {
-    fetchSessions()
-  }, [fetchSessions])
+    fetchProjects()
+  }, [fetchProjects])
 
-  // Fetch sessions periodically
+  // Fetch projects periodically
   useEffect(() => {
-    const interval = setInterval(fetchSessions, 5000)
+    const interval = setInterval(fetchProjects, 5000)
     return () => clearInterval(interval)
-  }, [fetchSessions])
+  }, [fetchProjects])
 
   return (
-    <div className="app">
+    <div className={`app terminal-${terminalMode}`}>
       <Header onReconnect={reconnect} />
       <main className="main-content">
-        <AgentPanel />
-        <TerminalPanel />
+        {terminalMode !== 'full' && <AgentPanel />}
+        {terminalMode !== 'collapsed' && <TerminalPanel />}
       </main>
       <StatusBar />
-      {showNewSessionModal && <NewSessionModal />}
     </div>
   )
 }

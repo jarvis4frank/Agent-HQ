@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
 import styles from './TerminalPanel.module.css'
@@ -11,14 +10,15 @@ export default function TerminalPanel() {
   const terminalRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
-  const [isExpanded, setIsExpanded] = useState(true)
   const sendInputRef = useRef<(data: string) => void>(() => {})
 
-  const { connectionStatus, setTerminalExpanded } = useAppStore()
+  const { connectionStatus, terminalMode } = useAppStore()
   const { subscribeToTerminal, sendResize, sendInput } = useWebSocket()
 
+  const isVisible = terminalMode !== 'collapsed'
+
   useEffect(() => {
-    if (!terminalRef.current) return
+    if (!terminalRef.current || !isVisible) return
 
     // Initialize xterm
     const terminal = new Terminal({
@@ -30,9 +30,6 @@ export default function TerminalPanel() {
         cursor: '#58a6ff',
         cursorAccent: '#0a0c10',
         selectionBackground: '#3b5070',
-        black: '#0a0c10',
-        red: '#f85149',
-        green: '#3fb950',
       },
       cursorBlink: true,
       cursorStyle: 'block',
@@ -67,15 +64,13 @@ export default function TerminalPanel() {
     }
 
     window.addEventListener('resize', handleResize)
-
-    // Initial resize
     handleResize()
 
     return () => {
       window.removeEventListener('resize', handleResize)
       terminal.dispose()
     }
-  }, [subscribeToTerminal, sendResize])
+  }, [isVisible, subscribeToTerminal, sendResize])
 
   // Handle terminal input
   useEffect(() => {
@@ -95,43 +90,29 @@ export default function TerminalPanel() {
     }
   }, [sendInput])
 
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded)
-    setTerminalExpanded(!isExpanded)
-    // Refit terminal after animation
-    setTimeout(() => {
-      if (fitAddonRef.current) {
-        fitAddonRef.current.fit()
-      }
-    }, 250)
-  }
+  // Refit when mode changes
+  useEffect(() => {
+    if (isVisible && fitAddonRef.current) {
+      setTimeout(() => {
+        fitAddonRef.current?.fit()
+      }, 100)
+    }
+  }, [terminalMode, isVisible])
+
+  if (!isVisible) return null
 
   return (
-    <div className={`${styles.container} ${isExpanded ? styles.expanded : styles.collapsed}`}>
+    <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.title}>Terminal</span>
         <div className={styles.headerRight}>
           <span className={`${styles.statusDot} ${styles[connectionStatus]}`} />
-          <button className={styles.toggleBtn} onClick={toggleExpanded}>
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
         </div>
       </div>
 
-      {isExpanded && (
-        <div className={styles.terminalWrapper}>
-          <div ref={terminalRef} className={styles.terminal} />
-        </div>
-      )}
-
-      {!isExpanded && (
-        <div className={styles.collapsedPreview}>
-          <span>Terminal collapsed</span>
-          <button onClick={toggleExpanded} className={styles.expandBtn}>
-            Expand
-          </button>
-        </div>
-      )}
+      <div className={styles.terminalWrapper}>
+        <div ref={terminalRef} className={styles.terminal} />
+      </div>
     </div>
   )
 }

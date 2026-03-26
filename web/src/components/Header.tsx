@@ -1,6 +1,6 @@
-import { Settings, Plus } from 'lucide-react'
+import { Minus, Maximize2, Minimize2 } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
-import SessionSelector from './SessionSelector'
+import ProjectSelector from './ProjectSelector'
 import styles from './Header.module.css'
 
 interface HeaderProps {
@@ -8,9 +8,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
-  const {
-    setShowNewSessionModal,
-  } = useAppStore()
+  const { terminalMode, setTerminalMode } = useAppStore()
 
   return (
     <header className={styles.header}>
@@ -19,20 +17,34 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
           <span className={styles.logoIcon}>◉</span>
           <span className={styles.logoText}>Agent HQ</span>
         </div>
-        <SessionSelector />
+        <ProjectSelector />
       </div>
 
       <div className={styles.right}>
-        <button
-          className={styles.newSessionBtn}
-          onClick={() => setShowNewSessionModal(true)}
-        >
-          <Plus size={16} />
-          <span>New Session</span>
-        </button>
-        <button className={styles.iconBtn} title="Settings">
-          <Settings size={18} />
-        </button>
+        {/* Terminal Controls */}
+        <div className={styles.terminalControls}>
+          <button
+            className={`${styles.terminalBtn} ${terminalMode === 'collapsed' ? styles.active : ''}`}
+            onClick={() => setTerminalMode('collapsed')}
+            title="Collapse Terminal"
+          >
+            <Minus size={14} />
+          </button>
+          <button
+            className={`${styles.terminalBtn} ${terminalMode === 'half' ? styles.active : ''}`}
+            onClick={() => setTerminalMode('half')}
+            title="50% Width"
+          >
+            50%
+          </button>
+          <button
+            className={`${styles.terminalBtn} ${terminalMode === 'full' ? styles.active : ''}`}
+            onClick={() => setTerminalMode('full')}
+            title="Fullscreen Terminal"
+          >
+            {terminalMode === 'full' ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        </div>
       </div>
     </header>
   )
