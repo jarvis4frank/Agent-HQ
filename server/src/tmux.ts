@@ -1,11 +1,10 @@
-import { execSync } from 'child_process'
+import { execSync, exec } from 'child_process'
 import { existsSync } from 'fs'
 
 // ============== Configuration ==============
 
-// Use default socket (avoid -L flag which has issues on macOS)
-// Session names will be prefixed to avoid conflicts
-const SESSION_PREFIX = 'agenthq-'
+const TMUX_SOCKET = 'agenthq'
+const TMUX_PREFIX = 'agenthq'
 
 // ============== Utility Functions ==============
 
@@ -25,8 +24,9 @@ function sanitizeInput(input: string): string {
 /**
  * Run a tmux command with the dedicated socket
  */
-function tmuxCommand(args: string[]): string {
-  const cmd = ['tmux', ...args].join(' ')
+function tmuxCommand(args: string[], useSocket = true): string {
+  const socketArg = useSocket ? ['-L', TMUX_SOCKET] : []
+  const cmd = ['tmux', ...socketArg, ...args].join(' ')
   try {
     return execSync(cmd, { encoding: 'utf8', timeout: 5000 }).trim()
   } catch (error: any) {
@@ -49,12 +49,9 @@ export interface TmuxSession {
 
 /**
  * Get the session name for a project
- * Sanitize projectId to be a valid tmux session name
  */
 export function getSessionName(projectId: string): string {
-  // Use a simple hash-like name to avoid long paths
-  const hash = projectId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)
-  return `ahq-${hash || 'session'}`
+  return `${TMUX_PREFIX}-${projectId}`
 }
 
 /**
@@ -70,7 +67,7 @@ export function sessionExists(sessionName: string): boolean {
 }
 
 /**
- * Create a new tmux session for a project (via execSync for session persistence)
+ * Create a new tmux session for a project
  */
 export function createSession(projectId: string, workDir: string, command = 'claude'): TmuxSession {
   const sessionName = getSessionName(projectId)
@@ -103,7 +100,7 @@ export function createSession(projectId: string, workDir: string, command = 'cla
 }
 
 /**
- * Attach to an existing session or create a new one (via execSync for session persistence)
+ * Attach to an existing session or create a new one
  */
 export function attachSession(projectId: string, workDir: string, command = 'claude'): TmuxSession {
   const sessionName = getSessionName(projectId)
@@ -122,7 +119,7 @@ export function attachSession(projectId: string, workDir: string, command = 'cla
 }
 
 /**
- * Detach from a session (for switching) - via execSync
+ * Detach from a session (for switching)
  */
 export function detachSession(sessionName: string): void {
   try {
@@ -134,8 +131,7 @@ export function detachSession(sessionName: string): void {
 }
 
 /**
- * Send input to a session (via execSync - used as fallback)
- * Note: For real-time input, use pty.write() instead
+ * Send input to a session
  */
 export function sendInput(sessionName: string, input: string): void {
   const sanitized = sanitizeInput(input)
@@ -143,15 +139,14 @@ export function sendInput(sessionName: string, input: string): void {
 }
 
 /**
- * Send enter key to execute input (via execSync - used as fallback)
+ * Send enter key to execute input
  */
 export function sendEnter(sessionName: string): void {
   tmuxCommand(['send-keys', '-t', sessionName, 'Enter'])
 }
 
 /**
- * Capture the current pane output (via execSync - used as fallback)
- * Note: For real-time output, use pty.onData() instead
+ * Capture the current pane output
  */
 export function captureOutput(sessionName: string): string {
   try {
@@ -194,7 +189,7 @@ export function listSessions(): TmuxSession[] {
     const sessions: TmuxSession[] = []
     for (const line of output.split('\n')) {
       const [name] = line.split(':')
-      if (name.startsWith(SESSION_PREFIX)) {
+      if (name.startsWith(TMUX_PREFIX)) {
         sessions.push({
           name,
           path: '',
@@ -232,6 +227,7 @@ export function getSessionInfo(sessionName: string): TmuxSession | null {
  */
 export function initializeTmux(): void {
   const tmuxDir = process.env.HOME ? `${process.env.HOME}/.tmux` : '/tmp/tmux'
+  const socketPath = `${tmuxDir}/${TMUX_SOCKET}`
   
   // Create directory if it doesn't exist
   try {
@@ -243,7 +239,7 @@ export function initializeTmux(): void {
     // Directory creation may fail, continue anyway
   }
   
-  console.log(`[Tmux] Using default socket with prefix: ${SESSION_PREFIX}`)
+  console.log(`[Tmux] Using socket: ${TMUX_SOCKET}`)
 }
 
 /**
