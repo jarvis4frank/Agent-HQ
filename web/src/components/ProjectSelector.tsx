@@ -68,7 +68,7 @@ export default function ProjectSelector() {
         className={styles.trigger}
         onClick={toggleDropdown}
       >
-        <span className={styles.sessionId}>
+        <span className={styles.sessionId} title={currentProject?.path}>
           {currentProject ? getProjectName(currentProject.path) : 'Select Project...'}
         </span>
         <ChevronDown 
