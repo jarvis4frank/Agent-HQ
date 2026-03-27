@@ -272,6 +272,32 @@ function handleHookEvent(event: any) {
       }
       break
 
+    case 'TeammateIdle':
+      // Agent team teammate is starting/spawning
+      const { teammate_id, teammate_name } = event
+      const newTeammate: Agent = {
+        id: teammate_id || `teammate_${Date.now()}`,
+        name: teammate_name || 'Teammate',
+        role: 'teammate',
+        status: 'running',
+        currentTask: 'Initializing...',
+        isMain: false,
+        sessionId: session_id,
+        startedAt: Date.now(),
+        tools: [],
+      }
+      agents.set(newTeammate.id, newTeammate)
+      console.log(`[Hook] TeammateIdle: ${newTeammate.name} (${newTeammate.id})`)
+      
+      // Broadcast timeline event
+      broadcastTimelineEvent({
+        agentId: newTeammate.id,
+        agentName: newTeammate.name,
+        event: 'started',
+        message: 'Team member initialized',
+      })
+      break
+
     case 'PreToolUse':
       // Tool starting
       const agentForTool = findOrCreateAgentForTool()
@@ -614,6 +640,13 @@ echo "Hook processed: $HOOK_EVENT"
         }]
       }],
       UserPromptSubmit: [{
+        matcher: "",
+        hooks: [{
+          type: "command",
+          command: "bash ~/.claude/hooks/send-hook.sh"
+        }]
+      }],
+      TeammateIdle: [{
         matcher: "",
         hooks: [{
           type: "command",
