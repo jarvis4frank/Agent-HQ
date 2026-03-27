@@ -19,9 +19,9 @@ const ptySessions: Map<string, PtySession> = new Map()
  * Sanitize projectId to be a valid tmux session name (and pty session ID)
  */
 function getPtySessionName(projectId: string): string {
-  // Replace invalid characters with underscores
-  const sanitized = projectId.replace(/[\/\\:\s]/g, '-').replace(/-+/g, '-')
-  return sanitized
+  // Use a simple hash-like name to avoid long paths (same as tmux.ts)
+  const hash = projectId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)
+  return `ahq-${hash || 'session'}`
 }
 
 /**
