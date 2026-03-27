@@ -46,6 +46,7 @@
   background: var(--bg-tertiary);
   padding: 4px;
   border-radius: var(--radius-md);
+  margin-left: auto;
 }
 
 .terminalBtn {
