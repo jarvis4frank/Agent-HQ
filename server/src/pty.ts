@@ -21,7 +21,7 @@ const ptySessions: Map<string, PtySession> = new Map()
 function getPtySessionName(projectId: string): string {
   // Replace invalid characters with underscores
   const sanitized = projectId.replace(/[\/\\:\s]/g, '-').replace(/-+/g, '-')
-  return `agenthq-${sanitized}`
+  return sanitized
 }
 
 /**
