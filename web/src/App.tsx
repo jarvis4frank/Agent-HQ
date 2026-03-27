@@ -5,16 +5,18 @@ import Header from './components/Header'
 import TerminalPanel from './components/TerminalPanel'
 import AgentPanel from './components/AgentPanel'
 import StatusBar from './components/StatusBar'
+import HooksModal from './components/HooksModal'
 import './styles/globals.css'
 
 function AppContent() {
-  const { fetchProjects, terminalMode } = useAppStore()
+  const { fetchProjects, terminalMode, hooksModalOpen, fetchHooksStatus } = useAppStore()
   const { reconnect } = useWebSocket()
 
   // Fetch projects on mount
   useEffect(() => {
     fetchProjects()
-  }, [fetchProjects])
+    fetchHooksStatus()
+  }, [fetchProjects, fetchHooksStatus])
 
   // Fetch projects periodically
   useEffect(() => {
@@ -30,6 +32,7 @@ function AppContent() {
         {terminalMode !== 'collapsed' && <TerminalPanel />}
       </main>
       <StatusBar />
+      {hooksModalOpen && <HooksModal onClose={() => useAppStore.getState().setHooksModalOpen(false)} />}
     </div>
   )
 }

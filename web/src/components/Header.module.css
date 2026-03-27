@@ -38,6 +38,47 @@
   gap: 8px;
 }
 
+/* Terminal Controls */
+.terminalControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.terminalBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.terminalBtn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.terminalBtn.active {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.terminalBtn.active:hover {
+  background: #79b8ff;
+  color: white;
+}
+
 .newSessionBtn {
   display: flex;
   align-items: center;
@@ -69,4 +110,39 @@
 .iconBtn:hover {
   color: var(--text-primary);
   background: var(--bg-tertiary);
+}
+
+/* Hooks Indicator */
+.hooksIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.hooksIndicator:hover {
+  background: var(--bg-secondary);
+}
+
+.hooksIndicator.configured {
+  color: var(--text-primary);
+}
+
+.hooksIndicator.notConfigured {
+  color: var(--text-secondary);
+}
+
+.hooksStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px;
+  right: 4px;
 }

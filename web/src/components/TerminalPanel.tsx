@@ -93,11 +93,23 @@ export default function TerminalPanel() {
   // Refit when mode changes
   useEffect(() => {
     if (isVisible && fitAddonRef.current) {
-      setTimeout(() => {
+      // Multiple fit attempts to handle container transition timing
+      const fitTerminal = () => {
         fitAddonRef.current?.fit()
-      }, 100)
+        sendResize(xtermRef.current?.cols || 80, xtermRef.current?.rows || 24)
+      }
+      
+      // Immediate fit, then again after transitions complete
+      fitTerminal()
+      const timeout1 = setTimeout(fitTerminal, 100)
+      const timeout2 = setTimeout(fitTerminal, 300)
+      
+      return () => {
+        clearTimeout(timeout1)
+        clearTimeout(timeout2)
+      }
     }
-  }, [terminalMode, isVisible])
+  }, [terminalMode, isVisible, sendResize])
 
   if (!isVisible) return null
 

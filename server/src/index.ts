@@ -5,7 +5,8 @@ import * as pty from 'node-pty'
 import { watch } from 'chokidar'
 import { join, basename } from 'path'
 import { homedir } from 'os'
-import { readdirSync, statSync, existsSync } from 'fs'
+import { readdirSync, statSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { execSync } from 'child_process'
 
 const app = express()
 const server = createServer(app)
@@ -260,6 +261,128 @@ app.post('/api/hooks', (req, res) => {
   } catch (error) {
     console.error('[API] Failed to handle hook:', error)
     res.status(500).json({ error: 'Failed to handle hook event' })
+  }
+})
+
+// ============== Hooks Status & Setup ==============
+
+const CLAUDE_HOOKS_DIR = join(homedir(), '.claude', 'hooks')
+const CLAUDE_SETTINGS_FILE = join(homedir(), '.claude', 'settings.json')
+
+interface HooksStatus {
+  configured: boolean
+  hookScriptExists: boolean
+  hooksConfigured: string[]
+  settingsFileExists: boolean
+}
+
+function getHooksStatus(): HooksStatus {
+  const hookScriptPath = join(CLAUDE_HOOKS_DIR, 'send-hook.sh')
+  const hookScriptExists = existsSync(hookScriptPath)
+  
+  let hooksConfigured: string[] = []
+  let settingsFileExists = false
+  
+  if (existsSync(CLAUDE_SETTINGS_FILE)) {
+    settingsFileExists = true
+    try {
+      const content = readFileSync(CLAUDE_SETTINGS_FILE, 'utf-8')
+      const settings = JSON.parse(content)
+      if (settings.hooks && typeof settings.hooks === 'object') {
+        hooksConfigured = Object.keys(settings.hooks)
+      }
+    } catch (e) {
+      console.error('Failed to parse settings.json:', e)
+    }
+  }
+  
+  return {
+    configured: hookScriptExists && hooksConfigured.length > 0,
+    hookScriptExists,
+    hooksConfigured,
+    settingsFileExists,
+  }
+}
+
+app.get('/api/hooks/status', (_req, res) => {
+  try {
+    const status = getHooksStatus()
+    res.json({ success: true, ...status })
+  } catch (error) {
+    console.error('[API] Failed to get hooks status:', error)
+    res.status(500).json({ success: false, error: 'Failed to get hooks status' })
+  }
+})
+
+app.post('/api/hooks/setup', (_req, res) => {
+  try {
+    // Ensure hooks directory exists
+    if (!existsSync(CLAUDE_HOOKS_DIR)) {
+      mkdirSync(CLAUDE_HOOKS_DIR, { recursive: true })
+    }
+    
+    const hookScriptPath = join(CLAUDE_HOOKS_DIR, 'send-hook.sh')
+    
+    // Create the hook script if it doesn't exist
+    if (!existsSync(hookScriptPath)) {
+      const hookScript = `#!/bin/bash
+# Claude Code Hook Script
+# This script is called by Claude Code with hook events
+
+# Read the hook event data from stdin
+EVENT_DATA=$(cat)
+
+# Extract hook event name
+HOOK_EVENT=$(echo "$EVENT_DATA" | node -e "const data=JSON.parse(require('fs').readFileSync(0, 'utf-8')); console.log(data.hook_event_name || '')")
+
+# Send to Agent HQ server
+curl -s -X POST http://localhost:3001/api/hooks \\
+  -H "Content-Type: application/json" \\
+  -d "$EVENT_DATA" > /dev/null 2>&1
+
+echo "Hook processed: $HOOK_EVENT"
+`
+      writeFileSync(hookScriptPath, hookScript)
+      // Make it executable
+      execSync(`chmod +x "${hookScriptPath}"`)
+      console.log('[API] Created hook script at:', hookScriptPath)
+    }
+    
+    // Backup and update settings.json
+    let settings: Record<string, any> = {}
+    if (existsSync(CLAUDE_SETTINGS_FILE)) {
+      // Create backup
+      const backupPath = CLAUDE_SETTINGS_FILE + '.backup'
+      const content = readFileSync(CLAUDE_SETTINGS_FILE, 'utf-8')
+      writeFileSync(backupPath, content)
+      console.log('[API] Backed up settings.json to:', backupPath)
+      
+      try {
+        settings = JSON.parse(content)
+      } catch (e) {
+        console.error('Failed to parse settings.json, starting fresh:', e)
+      }
+    }
+    
+    // Update hooks configuration
+    settings.hooks = {
+      HookEnabled: true,
+      Hooks: [
+        { Event: 'SubagentStart', File: 'send-hook.sh' },
+        { Event: 'SubagentStop', File: 'send-hook.sh' },
+        { Event: 'Stop', File: 'send-hook.sh' },
+        { Event: 'UserPromptSubmit', File: 'send-hook.sh' },
+      ],
+    }
+    
+    writeFileSync(CLAUDE_SETTINGS_FILE, JSON.stringify(settings, null, 2))
+    console.log('[API] Updated settings.json with hooks config')
+    
+    const status = getHooksStatus()
+    res.json({ success: true, ...status })
+  } catch (error) {
+    console.error('[API] Failed to setup hooks:', error)
+    res.status(500).json({ success: false, error: 'Failed to setup hooks' })
   }
 })
 

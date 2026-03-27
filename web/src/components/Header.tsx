@@ -1,4 +1,4 @@
-import { Minus, Maximize2, Minimize2 } from 'lucide-react'
+import { Minus, Maximize2, Minimize2, Link } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
 import styles from './Header.module.css'
@@ -8,7 +8,7 @@ interface HeaderProps {
 }
 
 export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
-  const { terminalMode, setTerminalMode } = useAppStore()
+  const { terminalMode, setTerminalMode, hooksConfigured, setHooksModalOpen } = useAppStore()
 
   return (
     <header className={styles.header}>
@@ -21,6 +21,20 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
       </div>
 
       <div className={styles.right}>
+        {/* Hooks Status Indicator */}
+        <button
+          className={`${styles.hooksIndicator} ${hooksConfigured ? styles.configured : styles.notConfigured}`}
+          onClick={() => setHooksModalOpen(true)}
+          title={hooksConfigured ? 'Hooks configured' : 'Hooks not configured'}
+        >
+          <Link size={14} />
+          {hooksConfigured ? (
+            <span className={styles.hooksStatusDot} style={{ background: '#2ea043' }} />
+          ) : (
+            <span className={styles.hooksStatusDot} style={{ background: '#bb8009' }} />
+          )}
+        </button>
+
         {/* Terminal Controls */}
         <div className={styles.terminalControls}>
           <button

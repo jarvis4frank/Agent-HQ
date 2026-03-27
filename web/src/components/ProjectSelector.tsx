@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -31,30 +32,60 @@ export default function ProjectSelector() {
     projects,
     currentProjectId,
     setCurrentProject,
+    connectionStatus,
   } = useAppStore()
   const { switchSession } = useWebSocket()
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const currentProject = projects.find(p => p.id === currentProjectId)
+
+  // Close dropdown when connection is established (project selected via WebSocket)
+  useEffect(() => {
+    if (connectionStatus === 'connected' && isOpen) {
+      setIsOpen(false)
+    }
+  }, [connectionStatus, isOpen])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSelectProject = (project: typeof projects[0]) => {
     if (!project.workDir) return
     setCurrentProject(project.id)
     switchSession(project.workDir)
+    setIsOpen(false) // Close dropdown after selection
+  }
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen)
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} ref={containerRef}>
       <button
         className={styles.trigger}
-        onClick={() => {}}
+        onClick={toggleDropdown}
       >
         <span className={styles.sessionId}>
           {currentProject ? getProjectName(currentProject.path) : 'Select Project...'}
         </span>
-        <ChevronDown size={14} className={styles.chevron} />
+        <ChevronDown 
+          size={14} 
+          className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} 
+        />
       </button>
 
-      {projects.length > 0 && (
+      {isOpen && projects.length > 0 && (
         <div className={styles.dropdown}>
           {projects.map(project => (
             <button

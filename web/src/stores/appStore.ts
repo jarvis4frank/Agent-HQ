@@ -13,6 +13,28 @@ async function fetchProjectsFromApi(): Promise<Project[]> {
   }
 }
 
+// Helper to fetch hooks status from API
+async function fetchHooksStatusFromApi(): Promise<{
+  configured: boolean
+  hookScriptExists: boolean
+  hooksConfigured: string[]
+  settingsFileExists: boolean
+}> {
+  try {
+    const res = await fetch('/api/hooks/status')
+    if (!res.ok) return { configured: false, hookScriptExists: false, hooksConfigured: [], settingsFileExists: false }
+    const data = await res.json()
+    return {
+      configured: data.configured ?? false,
+      hookScriptExists: data.hookScriptExists ?? false,
+      hooksConfigured: data.hooksConfigured ?? [],
+      settingsFileExists: data.settingsFileExists ?? false,
+    }
+  } catch {
+    return { configured: false, hookScriptExists: false, hooksConfigured: [], settingsFileExists: false }
+  }
+}
+
 interface AppState {
   // Projects
   projects: Project[]
@@ -35,6 +57,15 @@ interface AppState {
   terminalMode: 'collapsed' | 'half' | 'full'
   setTerminalMode: (mode: 'collapsed' | 'half' | 'full') => void
   toggleTerminal: () => void
+
+  // Hooks
+  hooksConfigured: boolean
+  hooksHookScriptExists: boolean
+  hooksConfiguredEvents: string[]
+  hooksModalOpen: boolean
+  setHooksStatus: (status: { configured: boolean; hookScriptExists: boolean; hooksConfigured: string[] }) => void
+  setHooksModalOpen: (open: boolean) => void
+  fetchHooksStatus: () => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -70,5 +101,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (current === 'collapsed') set({ terminalMode: 'half' })
     else if (current === 'half') set({ terminalMode: 'full' })
     else set({ terminalMode: 'collapsed' })
+  },
+
+  // Hooks
+  hooksConfigured: false,
+  hooksHookScriptExists: false,
+  hooksConfiguredEvents: [],
+  hooksModalOpen: false,
+  setHooksStatus: (status) => set({ 
+    hooksConfigured: status.configured,
+    hooksHookScriptExists: status.hookScriptExists,
+    hooksConfiguredEvents: status.hooksConfigured,
+  }),
+  setHooksModalOpen: (open) => set({ hooksModalOpen: open }),
+  fetchHooksStatus: async () => {
+    const status = await fetchHooksStatusFromApi()
+    set({ 
+      hooksConfigured: status.configured,
+      hooksHookScriptExists: status.hookScriptExists,
+      hooksConfiguredEvents: status.hooksConfigured,
+    })
   },
 }))
