@@ -684,6 +684,51 @@ app.post('/api/sessions', (req, res) => {
   }
 })
 
+// Create new project from directory path
+app.post('/api/projects', (req, res) => {
+  const { path: projectPath } = req.body
+  
+  if (!projectPath) {
+    return res.status(400).json({ error: 'path is required' })
+  }
+  
+  if (!existsSync(projectPath)) {
+    return res.status(400).json({ error: 'Directory does not exist' })
+  }
+  
+  try {
+    const stats = statSync(projectPath)
+    const name = basename(projectPath)
+    const id = `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    
+    const project = {
+      id,
+      path: projectPath,
+      status: 'active',
+      lastActivity: stats.mtimeMs,
+      size: stats.size,
+      workDir: projectPath,
+    }
+    
+    // Add to sessions map so it appears in the project list
+    const session: Session = {
+      id,
+      path: projectPath,
+      status: 'active',
+      lastActivity: Date.now(),
+      size: stats.size,
+      workDir: projectPath,
+    }
+    sessions.set(id, session)
+    
+    console.log(`[API] Created new project: ${name} at ${projectPath}`)
+    res.json({ project })
+  } catch (error) {
+    console.error('[API] Failed to create project:', error)
+    res.status(500).json({ error: 'Failed to create project' })
+  }
+})
+
 // Delete session
 app.delete('/api/sessions/:sessionId', (req, res) => {
   const { sessionId } = req.params

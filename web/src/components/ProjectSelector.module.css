@@ -150,3 +150,100 @@
   background: rgba(248, 81, 73, 0.2);
   color: var(--accent-red);
 }
+
+/* New Project Button */
+.newProjectButton {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.newProjectButton:hover {
+  background: rgba(88, 166, 255, 0.15);
+}
+
+.plusIcon {
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.folderIcon {
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* New Project Form */
+.newProjectForm {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pathInput {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.pathInput:focus {
+  border-color: var(--accent-blue);
+}
+
+.pathInput::placeholder {
+  color: var(--text-muted);
+}
+
+.newProjectActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.createButton {
+  flex: 1;
+  padding: 6px 12px;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.createButton:hover {
+  opacity: 0.9;
+}
+
+.createButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cancelButton:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
