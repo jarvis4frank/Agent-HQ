@@ -8,9 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@xterm/xterm": "^5.5.0",
     "@xterm/addon-fit": "^0.10.0",
-    "lucide-react": "^0.468.0",
+    "@xterm/xterm": "^5.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.12"
@@ -19,6 +18,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "lucide-react": "^0.263.1",
     "typescript": "^5.6.3",
     "vite": "^6.0.3"
   }

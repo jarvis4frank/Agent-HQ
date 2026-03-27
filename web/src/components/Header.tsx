@@ -1,6 +1,7 @@
 import { Maximize2, Minimize2, Link } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
+import IconButton from './IconButton'
 import styles from './Header.module.css'
 
 interface HeaderProps {
@@ -36,19 +37,16 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
         </button>
 
         {/* Terminal Controls - Single toggle button */}
-        <button
-          className={`${styles.terminalBtn} ${terminalMode !== 'collapsed' ? styles.active : ''}`}
+        <IconButton
+          icon={terminalMode === 'collapsed' ? Minimize2 : terminalMode === 'half' ? Maximize2 : Minimize2}
+          label={`Terminal: ${terminalMode} (click to toggle)`}
           onClick={() => {
             if (terminalMode === 'collapsed') setTerminalMode('half')
             else if (terminalMode === 'half') setTerminalMode('full')
             else setTerminalMode('collapsed')
           }}
-          title={`Terminal: ${terminalMode} (click to toggle)`}
-        >
-          {terminalMode === 'collapsed' && <Minimize2 size={14} />}
-          {terminalMode === 'half' && <Maximize2 size={14} />}
-          {terminalMode === 'full' && <Minimize2 size={14} />}
-        </button>
+          variant={terminalMode !== 'collapsed' ? 'primary' : 'default'}
+        />
       </div>
     </header>
   )
