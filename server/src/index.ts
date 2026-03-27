@@ -8,6 +8,40 @@ import { homedir } from 'os'
 import { readdirSync, statSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { execSync } from 'child_process'
 
+// Dynamically detect Claude binary path
+function getClaudePath(): string {
+  try {
+    // Try to find claude in PATH
+    const claudeInPath = execSync('which claude', { encoding: 'utf8' }).trim()
+    if (claudeInPath && existsSync(claudeInPath)) {
+      console.log(`[Server] Found Claude at: ${claudeInPath}`)
+      return claudeInPath
+    }
+  } catch {
+    // If which fails, continue to fallback
+  }
+  
+  // Fallback to common locations
+  const fallbackPaths = [
+    '/usr/local/bin/claude',
+    '/opt/homebrew/bin/claude',
+    join(homedir(), '.local/bin/claude'),
+  ]
+  
+  for (const p of fallbackPaths) {
+    if (existsSync(p)) {
+      console.log(`[Server] Found Claude at fallback: ${p}`)
+      return p
+    }
+  }
+  
+  // Last resort: just use 'claude' and hope it's in PATH
+  console.warn('[Server] Could not find Claude binary, using default')
+  return 'claude'
+}
+
+const CLAUDE_BINARY = getClaudePath()
+
 const app = express()
 const server = createServer(app)
 const wss = new WebSocketServer({ server, path: '/ws' })
@@ -94,7 +128,7 @@ function createSession(workDir: string, ws?: WebSocket): Session | null {
     const id = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const sessionPath = join(CLAUDE_DIR, id)
 
-    const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
+    const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
       name: 'xterm-256color',
       cols: 80,
       rows: 24,
@@ -443,7 +477,7 @@ wss.on('connection', (ws) => {
           if (msg.sessionId) {
             console.log('[WS] Creating PTY for session:', msg.sessionId)
 
-            const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
+            const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
               name: 'xterm-256color',
               cols: 80,
               rows: 24,
@@ -506,7 +540,7 @@ wss.on('connection', (ws) => {
               session.pty.kill()
             }
 
-            const ptyProcess = pty.spawn('/Users/frank/.local/bin/claude', [], {
+            const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
               name: 'xterm-256color',
               cols: 80,
               rows: 24,
