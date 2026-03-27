@@ -15,7 +15,7 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
       <div className={styles.left}>
         <div className={styles.logo}>
           <span className={styles.logoIcon}>◉</span>
-          <span className={styles.logoText}>Agent HQ</span>
+          <span className={styles.logoText} title="Agent HQ">Agent HQ</span>
         </div>
         <ProjectSelector />
       </div>
