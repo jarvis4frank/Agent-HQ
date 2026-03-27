@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, Link } from 'lucide-react'
+import { Maximize2, Minimize2, Link, Plus } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
 import IconButton from './IconButton'
@@ -18,23 +18,29 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
           <span className={styles.logoIcon}>◉</span>
           <span className={styles.logoText} title="Agent HQ">Agent HQ</span>
         </div>
-        <ProjectSelector />
+        <div className={styles.projectArea}>
+          <ProjectSelector />
+          <IconButton
+            icon={Plus}
+            label="New Project"
+            onClick={() => {
+              // Trigger new project creation in ProjectSelector
+              const event = new CustomEvent('newProject')
+              window.dispatchEvent(event)
+            }}
+            variant="primary"
+          />
+        </div>
       </div>
 
       <div className={styles.right}>
         {/* Hooks Status Indicator */}
-        <button
-          className={`${styles.hooksIndicator} ${hooksConfigured ? styles.configured : styles.notConfigured}`}
+        <IconButton
+          icon={Link}
+          label={hooksConfigured ? 'Hooks configured' : 'Hooks not configured'}
           onClick={() => setHooksModalOpen(true)}
-          title={hooksConfigured ? 'Hooks configured' : 'Hooks not configured'}
-        >
-          <Link size={14} />
-          {hooksConfigured ? (
-            <span className={styles.hooksStatusDot} style={{ background: '#2ea043' }} />
-          ) : (
-            <span className={styles.hooksStatusDot} style={{ background: '#bb8009' }} />
-          )}
-        </button>
+          variant={hooksConfigured ? 'default' : 'default'}
+        />
 
         {/* Terminal Controls - Single toggle button */}
         <IconButton

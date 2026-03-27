@@ -55,6 +55,16 @@ export default function ProjectSelector() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Listen for new project event from Header
+  useEffect(() => {
+    const handleNewProject = () => {
+      setIsOpen(true)
+      setIsCreatingProject(true)
+    }
+    window.addEventListener('newProject', handleNewProject)
+    return () => window.removeEventListener('newProject', handleNewProject)
+  }, [])
+
   const handleSelectProject = (project: typeof projects[0]) => {
     if (!project.workDir) return
     setCurrentProject(project.id)

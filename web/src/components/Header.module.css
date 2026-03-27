@@ -12,12 +12,19 @@
 .left {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
   white-space: nowrap;
   overflow: visible;
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.projectArea {
   display: flex;
   align-items: center;
   gap: 8px;
