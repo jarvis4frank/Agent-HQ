@@ -881,6 +881,56 @@ watcher.on('all', (event, path) => {
   console.log(`Session directory changed: ${event} - ${path}`)
 })
 
+// ============== Graceful Shutdown ==============
+
+async function shutdown(signal: string): Promise<void> {
+  console.log(`\n[Server] Received ${signal}, starting graceful shutdown...`)
+
+  // 1. Stop output polling for all sessions
+  console.log('[Server] Stopping output polling for all sessions...')
+  sessions.forEach((session) => {
+    stopOutputPolling(session)
+  })
+
+  // 2. Kill all tmux sessions
+  console.log('[Server] Killing all tmux sessions...')
+  sessions.forEach((session) => {
+    if (session.sessionName) {
+      try {
+        tmux.killSession(session.sessionName)
+        console.log(`[Server] Killed tmux session: ${session.sessionName}`)
+      } catch (error) {
+        console.warn(`[Server] Failed to kill tmux session ${session.sessionName}:`, error)
+      }
+    }
+  })
+
+  // 3. Close WebSocket connections
+  console.log('[Server] Closing WebSocket connections...')
+  sessions.forEach((session) => {
+    if (session.ws && session.ws.readyState === WebSocket.OPEN) {
+      session.ws.close()
+    }
+  })
+
+  // 4. Close HTTP server
+  console.log('[Server] Closing HTTP server...')
+  await new Promise<void>((resolve) => {
+    server.close(() => {
+      console.log('[Server] HTTP server closed')
+      resolve()
+    })
+  })
+
+  // 5. Exit with success code
+  console.log('[Server] Shutdown complete')
+  process.exit(0)
+}
+
+// Register signal handlers
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
+
 // ============== Start Server ==============
 
 // Initialize tmux with proper socket
