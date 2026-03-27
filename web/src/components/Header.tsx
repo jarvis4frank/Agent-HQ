@@ -1,4 +1,4 @@
-import { Minus, Maximize2, Minimize2, Link } from 'lucide-react'
+import { Maximize2, Minimize2, Link } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
 import styles from './Header.module.css'
@@ -35,30 +35,20 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
           )}
         </button>
 
-        {/* Terminal Controls */}
-        <div className={styles.terminalControls}>
-          <button
-            className={`${styles.terminalBtn} ${terminalMode === 'collapsed' ? styles.active : ''}`}
-            onClick={() => setTerminalMode('collapsed')}
-            title="Collapse Terminal"
-          >
-            <Minus size={14} />
-          </button>
-          <button
-            className={`${styles.terminalBtn} ${terminalMode === 'half' ? styles.active : ''}`}
-            onClick={() => setTerminalMode('half')}
-            title="50% Width"
-          >
-            50%
-          </button>
-          <button
-            className={`${styles.terminalBtn} ${terminalMode === 'full' ? styles.active : ''}`}
-            onClick={() => setTerminalMode('full')}
-            title="Fullscreen Terminal"
-          >
-            {terminalMode === 'full' ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-          </button>
-        </div>
+        {/* Terminal Controls - Single toggle button */}
+        <button
+          className={`${styles.terminalBtn} ${terminalMode !== 'collapsed' ? styles.active : ''}`}
+          onClick={() => {
+            if (terminalMode === 'collapsed') setTerminalMode('half')
+            else if (terminalMode === 'half') setTerminalMode('full')
+            else setTerminalMode('collapsed')
+          }}
+          title={`Terminal: ${terminalMode} (click to toggle)`}
+        >
+          {terminalMode === 'collapsed' && <Minimize2 size={14} />}
+          {terminalMode === 'half' && <Maximize2 size={14} />}
+          {terminalMode === 'full' && <Minimize2 size={14} />}
+        </button>
       </div>
     </header>
   )
