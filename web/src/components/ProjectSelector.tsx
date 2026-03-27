@@ -32,20 +32,12 @@ export default function ProjectSelector() {
     projects,
     currentProjectId,
     setCurrentProject,
-    connectionStatus,
   } = useAppStore()
   const { switchSession } = useWebSocket()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const currentProject = projects.find(p => p.id === currentProjectId)
-
-  // Close dropdown when connection is established (project selected via WebSocket)
-  useEffect(() => {
-    if (connectionStatus === 'connected' && isOpen) {
-      setIsOpen(false)
-    }
-  }, [connectionStatus, isOpen])
 
   // Close dropdown when clicking outside
   useEffect(() => {
