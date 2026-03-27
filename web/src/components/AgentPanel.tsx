@@ -2,12 +2,16 @@ import { Bot } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import styles from './AgentPanel.module.css'
 
-export default function AgentPanel() {
+interface Props {
+  className?: string
+}
+
+export default function AgentPanel({ className }: Props) {
   const { agents } = useAppStore()
 
   if (agents.length === 0) {
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${className || ''}`}>
         <div className={styles.emptyState}>
           <Bot size={32} />
           <p>Connect to a session to see agents</p>
@@ -17,7 +21,7 @@ export default function AgentPanel() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${className || ''}`}>
       <div className={styles.agentList}>
         {agents.map((agent) => (
           <div key={agent.id} className={styles.agentCard}>
