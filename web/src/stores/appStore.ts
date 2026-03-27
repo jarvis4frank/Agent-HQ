@@ -90,7 +90,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setConnectionStatus: (status) => set({ connectionStatus: status }),
 
   // Terminal - default to 'half' to show Terminal on load
-  terminalMode: 'half',
+  terminalMode: 'half' as const,
   setTerminalMode: (mode) => {
     console.log('[Store] setTerminalMode:', mode)
     set({ terminalMode: mode })
