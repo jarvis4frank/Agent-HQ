@@ -1,12 +1,14 @@
 import express from 'express'
 import { createServer } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
-import * as pty from 'node-pty'
 import { watch } from 'chokidar'
 import { join, basename } from 'path'
 import { homedir } from 'os'
 import { readdirSync, statSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { execSync } from 'child_process'
+
+// Import tmux utilities
+import * as tmux from './tmux'
 
 // Dynamically detect Claude binary path
 function getClaudePath(): string {
@@ -57,8 +59,10 @@ interface Session {
   lastActivity: number
   size: number
   workDir: string
-  pty?: pty.IPty
+  sessionName?: string
   ws?: WebSocket
+  outputPollInterval?: NodeJS.Timeout
+  lastOutput?: string
 }
 
 interface Tool {
@@ -88,7 +92,7 @@ interface Agent {
 
 // ============== State ==============
 
-// PTY sessions map
+// Tmux sessions map
 const sessions: Map<string, Session> = new Map()
 
 // Active agents (managed via Hooks)
@@ -96,6 +100,9 @@ const agents: Map<string, Agent> = new Map()
 
 // Claude Code sessions directory
 const CLAUDE_DIR = join(homedir(), '.claude', 'projects')
+
+// Output polling interval in ms (50ms = 20fps)
+const OUTPUT_POLL_INTERVAL = 50
 
 // ============== Session Management ==============
 
@@ -140,15 +147,10 @@ function createSession(workDir: string, ws?: WebSocket): Session | null {
   try {
     const id = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const sessionPath = join(CLAUDE_DIR, id)
-
-    const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
-      name: 'xterm-256color',
-      cols: 80,
-      rows: 24,
-      cwd: workDir || homedir(),
-      env: process.env as { [key: string]: string },
-    })
-
+    
+    // Create tmux session for this project
+    const tmuxSession = tmux.attachSession(id, workDir, CLAUDE_BINARY)
+    
     const session: Session = {
       id,
       path: sessionPath,
@@ -156,29 +158,60 @@ function createSession(workDir: string, ws?: WebSocket): Session | null {
       lastActivity: Date.now(),
       size: 0,
       workDir,
-      pty: ptyProcess,
+      sessionName: tmuxSession.name,
       ws,
     }
 
     sessions.set(id, session)
-
-    ptyProcess.onData((data: string) => {
-      if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-        session.ws.send(JSON.stringify({ type: 'terminal_output', data }))
-      }
-    })
-
-    ptyProcess.onExit(({ exitCode }) => {
-      session.status = 'closed'
-      if (session.ws && session.ws.readyState === WebSocket.OPEN) {
-        session.ws.send(JSON.stringify({ type: 'terminal_exit', data: exitCode.toString() }))
-      }
-    })
-
+    
+    // Start polling for output
+    startOutputPolling(session)
+    
+    console.log(`[Server] Created session ${id} with tmux session ${tmuxSession.name}`)
     return session
   } catch (error) {
     console.error('Failed to create session:', error)
     return null
+  }
+}
+
+/**
+ * Start polling tmux output and sending to WebSocket
+ */
+function startOutputPolling(session: Session): void {
+  if (!session.sessionName) return
+  
+  session.outputPollInterval = setInterval(() => {
+    if (!session.sessionName) return
+    
+    try {
+      const output = tmux.captureOutput(session.sessionName)
+      if (output !== session.lastOutput) {
+        session.lastOutput = output
+        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
+          session.ws.send(JSON.stringify({ type: 'terminal_output', data: output }))
+        }
+      }
+    } catch (error) {
+      // Session might have ended, check status
+      if (!tmux.sessionExists(session.sessionName)) {
+        session.status = 'closed'
+        if (session.ws && session.ws.readyState === WebSocket.OPEN) {
+          session.ws.send(JSON.stringify({ type: 'terminal_exit', data: '0' }))
+        }
+        stopOutputPolling(session)
+      }
+    }
+  }, OUTPUT_POLL_INTERVAL)
+}
+
+/**
+ * Stop output polling for a session
+ */
+function stopOutputPolling(session: Session): void {
+  if (session.outputPollInterval) {
+    clearInterval(session.outputPollInterval)
+    session.outputPollInterval = undefined
   }
 }
 
@@ -691,9 +724,15 @@ app.delete('/api/sessions/:sessionId', (req, res) => {
   if (!session) {
     return res.status(404).json({ error: 'Session not found' })
   }
-  if (session.pty) {
-    session.pty.kill()
+  
+  // Kill the tmux session
+  if (session.sessionName) {
+    tmux.killSession(session.sessionName)
   }
+  
+  // Stop output polling
+  stopOutputPolling(session)
+  
   sessions.delete(sessionId)
   res.json({ success: true })
 })
@@ -721,16 +760,19 @@ wss.on('connection', (ws) => {
       switch (msg.type) {
         case 'subscribe':
           if (msg.sessionId) {
-            console.log('[WS] Creating PTY for session:', msg.sessionId)
+            console.log('[WS] Creating tmux session for:', msg.sessionId)
+            
+            // Stop polling for current session if any
+            if (session) {
+              stopOutputPolling(session)
+              if (session.sessionName) {
+                tmux.detachSession(session.sessionName)
+              }
+            }
 
-            const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
-              name: 'xterm-256color',
-              cols: 80,
-              rows: 24,
-              cwd: msg.sessionId,
-              env: process.env as { [key: string]: string },
-            })
-
+            // Create/attach to tmux session
+            const tmuxSession = tmux.attachSession(msg.sessionId, msg.sessionId, CLAUDE_BINARY)
+            
             currentSessionId = msg.sessionId
             session = {
               id: msg.sessionId,
@@ -739,26 +781,14 @@ wss.on('connection', (ws) => {
               lastActivity: Date.now(),
               size: 0,
               workDir: msg.sessionId,
-              pty: ptyProcess,
+              sessionName: tmuxSession.name,
               ws,
             }
 
             sessions.set(msg.sessionId, session)
-
-            // Send terminal output
-            ptyProcess.onData((data: string) => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'terminal_output', data }))
-              }
-            })
-
-            ptyProcess.onExit(({ exitCode }) => {
-              console.log(`[WS] PTY exited with code: ${exitCode}`)
-              session!.status = 'closed'
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'terminal_exit', data: exitCode.toString() }))
-              }
-            })
+            
+            // Start output polling for this session
+            startOutputPolling(session)
 
             ws.send(JSON.stringify({ type: 'connection_status', status: 'connected', sessionId: msg.sessionId }))
             ws.send(JSON.stringify({ type: 'agents_update', agents: Array.from(agents.values()) }))
@@ -766,34 +796,35 @@ wss.on('connection', (ws) => {
           break
 
         case 'terminal_input':
-          if (session?.pty) {
-            session.pty.write(msg.data)
+          if (session?.sessionName) {
+            tmux.sendInput(session.sessionName, msg.data)
+            tmux.sendEnter(session.sessionName)
             session.lastActivity = Date.now()
           }
           break
 
         case 'resize':
-          if (session?.pty) {
-            session.pty.resize(msg.cols || 80, msg.rows || 24)
+          if (session?.sessionName) {
+            tmux.resizeSession(session.sessionName, msg.cols || 80, msg.rows || 24)
           }
           break
 
         case 'session_switch':
           if (msg.sessionId) {
             console.log('[WS] Switching to session:', msg.sessionId)
-
-            if (session?.pty) {
-              session.pty.kill()
+            
+            // Detach from current session (do NOT kill)
+            if (session) {
+              stopOutputPolling(session)
+              if (session.sessionName) {
+                tmux.detachSession(session.sessionName)
+                console.log(`[WS] Detached from ${session.sessionName} (session preserved)`)
+              }
             }
 
-            const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
-              name: 'xterm-256color',
-              cols: 80,
-              rows: 24,
-              cwd: msg.sessionId,
-              env: process.env as { [key: string]: string },
-            })
-
+            // Attach to new session (create if doesn't exist)
+            const tmuxSession = tmux.attachSession(msg.sessionId, msg.sessionId, CLAUDE_BINARY)
+            
             currentSessionId = msg.sessionId
             session = {
               id: msg.sessionId,
@@ -802,24 +833,14 @@ wss.on('connection', (ws) => {
               lastActivity: Date.now(),
               size: 0,
               workDir: msg.sessionId,
-              pty: ptyProcess,
+              sessionName: tmuxSession.name,
               ws,
             }
 
             sessions.set(msg.sessionId, session)
-
-            ptyProcess.onData((data: string) => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'terminal_output', data }))
-              }
-            })
-
-            ptyProcess.onExit(({ exitCode }) => {
-              session!.status = 'closed'
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'terminal_exit', data: exitCode.toString() }))
-              }
-            })
+            
+            // Start output polling for new session
+            startOutputPolling(session)
 
             ws.send(JSON.stringify({ type: 'connection_status', status: 'connected', sessionId: msg.sessionId }))
             ws.send(JSON.stringify({ type: 'agents_update', agents: Array.from(agents.values()) }))
@@ -833,12 +854,15 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('[WS] Client disconnected')
-    if (session?.pty) {
-      session.pty.kill()
+    // Detach from session but DON'T kill it (preserve for reconnection)
+    if (session) {
+      stopOutputPolling(session)
+      if (session.sessionName) {
+        tmux.detachSession(session.sessionName)
+        console.log(`[WS] Detached from ${session.sessionName} (session preserved for reconnection)`)
+      }
     }
-    if (currentSessionId) {
-      sessions.delete(currentSessionId)
-    }
+    // Don't delete session from map - allows reconnection
   })
 
   ws.on('error', (error) => {
@@ -859,10 +883,14 @@ watcher.on('all', (event, path) => {
 
 // ============== Start Server ==============
 
+// Initialize tmux with proper socket
+tmux.initializeTmux()
+
 const PORT = 3001
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
   console.log(`WebSocket available at ws://localhost:${PORT}/ws`)
   console.log(`Claude Code Hook endpoint: POST http://localhost:${PORT}/api/hooks`)
   console.log(`Watching Claude projects in: ${CLAUDE_DIR}`)
+  console.log(`Using tmux socket: agenthq`)
 })
