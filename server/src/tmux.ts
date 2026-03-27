@@ -1,4 +1,4 @@
-import { execSync, exec } from 'child_process'
+import { execSync } from 'child_process'
 import { existsSync } from 'fs'
 
 // ============== Configuration ==============
@@ -70,7 +70,7 @@ export function sessionExists(sessionName: string): boolean {
 }
 
 /**
- * Create a new tmux session for a project
+ * Create a new tmux session for a project (via execSync for session persistence)
  */
 export function createSession(projectId: string, workDir: string, command = 'claude'): TmuxSession {
   const sessionName = getSessionName(projectId)
@@ -103,7 +103,7 @@ export function createSession(projectId: string, workDir: string, command = 'cla
 }
 
 /**
- * Attach to an existing session or create a new one
+ * Attach to an existing session or create a new one (via execSync for session persistence)
  */
 export function attachSession(projectId: string, workDir: string, command = 'claude'): TmuxSession {
   const sessionName = getSessionName(projectId)
@@ -122,7 +122,7 @@ export function attachSession(projectId: string, workDir: string, command = 'cla
 }
 
 /**
- * Detach from a session (for switching)
+ * Detach from a session (for switching) - via execSync
  */
 export function detachSession(sessionName: string): void {
   try {
@@ -134,7 +134,8 @@ export function detachSession(sessionName: string): void {
 }
 
 /**
- * Send input to a session
+ * Send input to a session (via execSync - used as fallback)
+ * Note: For real-time input, use pty.write() instead
  */
 export function sendInput(sessionName: string, input: string): void {
   const sanitized = sanitizeInput(input)
@@ -142,14 +143,15 @@ export function sendInput(sessionName: string, input: string): void {
 }
 
 /**
- * Send enter key to execute input
+ * Send enter key to execute input (via execSync - used as fallback)
  */
 export function sendEnter(sessionName: string): void {
   tmuxCommand(['send-keys', '-t', sessionName, 'Enter'])
 }
 
 /**
- * Capture the current pane output
+ * Capture the current pane output (via execSync - used as fallback)
+ * Note: For real-time output, use pty.onData() instead
  */
 export function captureOutput(sessionName: string): string {
   try {
