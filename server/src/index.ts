@@ -61,6 +61,18 @@ interface Session {
   ws?: WebSocket
 }
 
+interface Tool {
+  name: string
+  status: 'idle' | 'executing' | 'completed' | 'failed'
+  startedAt?: number
+  duration?: number
+  error?: string
+  hookEvent?: string
+  hookPayload?: Record<string, unknown>
+  query?: string
+  command?: string
+}
+
 interface Agent {
   id: string
   name: string
@@ -71,6 +83,7 @@ interface Agent {
   sessionId: string
   startedAt?: number
   lastMessage?: string
+  tools?: Tool[]
 }
 
 // ============== State ==============
@@ -172,7 +185,46 @@ function createSession(workDir: string, ws?: WebSocket): Session | null {
 // ============== Agent Management (via Hooks) ==============
 
 function handleHookEvent(event: any) {
-  const { hook_event_name, session_id, agent_id, agent_type, last_assistant_message, cwd } = event
+  const { 
+    hook_event_name, 
+    session_id, 
+    agent_id, 
+    agent_type, 
+    last_assistant_message, 
+    cwd,
+    tool_name,
+    tool_input,
+    tool_response,
+    error
+  } = event
+
+  // Helper to find or create agent for tool events
+  function findOrCreateAgentForTool(): Agent | null {
+    // If we have a specific agent_id, use it
+    if (agent_id && agents.has(agent_id)) {
+      return agents.get(agent_id)!
+    }
+    // Otherwise use main agent for session
+    if (session_id) {
+      const mainAgentId = `main_${session_id}`
+      let agent = agents.get(mainAgentId)
+      if (!agent) {
+        agent = {
+          id: mainAgentId,
+          name: 'Claude',
+          role: 'coordinator',
+          status: 'running',
+          currentTask: 'Processing...',
+          isMain: true,
+          sessionId: session_id,
+          tools: [],
+        }
+        agents.set(mainAgentId, agent)
+      }
+      return agent
+    }
+    return null
+  }
 
   switch (hook_event_name) {
     case 'SubagentStart':
@@ -187,9 +239,18 @@ function handleHookEvent(event: any) {
         sessionId: session_id,
         startedAt: Date.now(),
         lastMessage: '',
+        tools: [],
       }
       agents.set(startAgent.id, startAgent)
       console.log(`[Hook] SubagentStart: ${startAgent.name} (${startAgent.id})`)
+      
+      // Broadcast timeline event
+      broadcastTimelineEvent({
+        agentId: startAgent.id,
+        agentName: startAgent.name,
+        event: 'started',
+        message: 'Agent started',
+      })
       break
 
     case 'SubagentStop':
@@ -200,13 +261,123 @@ function handleHookEvent(event: any) {
         agent.currentTask = last_assistant_message || 'Completed'
         agent.lastMessage = last_assistant_message
         console.log(`[Hook] SubagentStop: ${agent.name} (${agent_id})`)
+        
+        // Broadcast timeline event
+        broadcastTimelineEvent({
+          agentId: agent.id,
+          agentName: agent.name,
+          event: 'completed',
+          message: last_assistant_message?.slice(0, 50) || 'Task completed',
+        })
+      }
+      break
+
+    case 'PreToolUse':
+      // Tool starting
+      const agentForTool = findOrCreateAgentForTool()
+      if (agentForTool && tool_name) {
+        // Ensure tools array exists
+        if (!agentForTool.tools) {
+          agentForTool.tools = []
+        }
+        
+        // Add or update tool
+        const existingTool = agentForTool.tools.find(t => t.name === tool_name)
+        const toolStartTime = Date.now()
+        
+        // Extract query/command from tool_input
+        let query: string | undefined
+        let command: string | undefined
+        if (tool_input) {
+          query = tool_input.query || tool_input.search
+          command = tool_input.command
+        }
+        
+        if (existingTool) {
+          existingTool.status = 'executing'
+          existingTool.startedAt = toolStartTime
+          existingTool.hookEvent = hook_event_name
+          existingTool.hookPayload = tool_input
+          existingTool.query = query
+          existingTool.command = command
+        } else {
+          const newTool: Tool = {
+            name: tool_name,
+            status: 'executing',
+            startedAt: toolStartTime,
+            hookEvent: hook_event_name,
+            hookPayload: tool_input,
+            query,
+            command,
+          }
+          agentForTool.tools.push(newTool)
+        }
+        
+        // Set agent to running
+        agentForTool.status = 'running'
+        
+        console.log(`[Hook] PreToolUse: ${tool_name} by ${agentForTool.name}`)
+        
+        // Broadcast timeline event
+        broadcastTimelineEvent({
+          agentId: agentForTool.id,
+          agentName: agentForTool.name,
+          event: 'started',
+          message: `Executing: ${tool_name}`,
+        })
+      }
+      break
+
+    case 'PostToolUse':
+      // Tool completed
+      const agentForPostTool = findOrCreateAgentForTool()
+      if (agentForPostTool && tool_name) {
+        const tool = agentForPostTool.tools?.find(t => t.name === tool_name)
+        if (tool) {
+          tool.status = 'completed'
+          tool.duration = tool.startedAt ? (Date.now() - tool.startedAt) / 1000 : undefined
+          tool.hookEvent = hook_event_name
+          tool.hookPayload = tool_response
+          
+          console.log(`[Hook] PostToolUse: ${tool_name} completed in ${tool.duration?.toFixed(1)}s`)
+          
+          // Broadcast timeline event
+          broadcastTimelineEvent({
+            agentId: agentForPostTool.id,
+            agentName: agentForPostTool.name,
+            event: 'completed',
+            message: `Completed: ${tool_name}`,
+          })
+        }
+      }
+      break
+
+    case 'PostToolUseFailure':
+      // Tool failed
+      const agentForFailure = findOrCreateAgentForTool()
+      if (agentForFailure && tool_name) {
+        const tool = agentForFailure.tools?.find(t => t.name === tool_name)
+        if (tool) {
+          tool.status = 'failed'
+          tool.duration = tool.startedAt ? (Date.now() - tool.startedAt) / 1000 : undefined
+          tool.error = error || 'Tool execution failed'
+          
+          console.log(`[Hook] PostToolUseFailure: ${tool_name} failed - ${error}`)
+          
+          // Broadcast timeline event
+          broadcastTimelineEvent({
+            agentId: agentForFailure.id,
+            agentName: agentForFailure.name,
+            event: 'error',
+            message: `Failed: ${tool_name} - ${error}`,
+          })
+        }
       }
       break
 
     case 'Stop':
       // Main agent finished thinking
-      if (session_id && last_assistant_message) {
-        // Find or create main agent for this session
+      if (session_id) {
         const mainAgentId = `main_${session_id}`
         let mainAgent = agents.get(mainAgentId)
         if (!mainAgent) {
@@ -218,8 +389,11 @@ function handleHookEvent(event: any) {
             currentTask: 'Ready',
             isMain: true,
             sessionId: session_id,
+            tools: [],
           }
           agents.set(mainAgentId, mainAgent)
+        } else {
+          mainAgent.status = 'idle'
         }
         mainAgent.lastMessage = last_assistant_message
       }
@@ -239,18 +413,43 @@ function handleHookEvent(event: any) {
             currentTask: 'Processing...',
             isMain: true,
             sessionId: session_id,
+            tools: [],
           }
           agents.set(mainAgentId, mainAgent)
         } else {
           mainAgent.status = 'thinking'
           mainAgent.currentTask = 'Processing...'
         }
+        
+        // Broadcast timeline event
+        broadcastTimelineEvent({
+          agentId: mainAgent.id,
+          agentName: mainAgent.name,
+          event: 'thinking',
+          message: 'Processing prompt...',
+        })
       }
       break
   }
 
   // Broadcast agents update to all connected clients
   broadcastAgentsUpdate()
+}
+
+interface TimelineEvent {
+  agentId: string
+  agentName: string
+  event: 'started' | 'completed' | 'error' | 'thinking'
+  message: string
+}
+
+function broadcastTimelineEvent(event: TimelineEvent) {
+  const message = JSON.stringify({ type: 'timeline_event', ...event })
+  sessions.forEach((session) => {
+    if (session.ws && session.ws.readyState === WebSocket.OPEN) {
+      session.ws.send(message)
+    }
+  })
 }
 
 function broadcastAgentsUpdate() {

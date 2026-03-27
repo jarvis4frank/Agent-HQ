@@ -1,3 +1,30 @@
+// Tool Status
+export type ToolStatus = 'idle' | 'executing' | 'completed' | 'failed'
+
+// Tool interface
+export interface Tool {
+  name: string
+  status: ToolStatus
+  startedAt?: number
+  duration?: number
+  error?: string
+  hookEvent?: string
+  hookPayload?: Record<string, unknown>
+  query?: string // For search tools
+  command?: string // For bash tools
+}
+
+// Timeline Event interface
+export interface TimelineEvent {
+  id: string
+  timestamp: string // Formatted time: "10:01"
+  timestampMs: number
+  agentId: string
+  agentName: string
+  event: 'started' | 'completed' | 'error' | 'thinking'
+  message: string
+}
+
 // Agent Status
 export type AgentStatus = 'idle' | 'running' | 'thinking' | 'working' | 'error' | 'waiting'
 
@@ -10,6 +37,9 @@ export interface Agent {
   currentTask?: string
   lastMessage?: string
   isMain?: boolean
+  tools?: Tool[]
+  startedAt?: number
+  sessionId?: string
 }
 
 // Message interface
@@ -44,6 +74,7 @@ export type WSMessageType =
   | 'connection_status'
   | 'subscribe'
   | 'session_switch'
+  | 'timeline_event'
 
 export interface WSMessage {
   type: WSMessageType
@@ -53,4 +84,8 @@ export interface WSMessage {
   sessionId?: string
   cols?: number
   rows?: number
+  agentId?: string
+  agentName?: string
+  event?: 'started' | 'completed' | 'error' | 'thinking'
+  message?: string
 }

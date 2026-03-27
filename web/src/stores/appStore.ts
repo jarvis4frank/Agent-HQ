@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Agent, Project, ConnectionStatus } from '../types'
+import type { Agent, Project, ConnectionStatus, Tool, TimelineEvent } from '../types'
 
 // Helper to fetch projects from API
 async function fetchProjectsFromApi(): Promise<Project[]> {
@@ -35,6 +35,12 @@ async function fetchHooksStatusFromApi(): Promise<{
   }
 }
 
+// Format timestamp for timeline
+function formatTimestamp(ms: number): string {
+  const date = new Date(ms)
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 interface AppState {
   // Projects
   projects: Project[]
@@ -48,6 +54,20 @@ interface AppState {
   selectedAgentId: string | null
   setAgents: (agents: Agent[]) => void
   selectAgent: (id: string | null) => void
+  // Add/update a single agent (for WebSocket updates)
+  updateAgent: (agent: Agent) => void
+  // Add a tool to an agent
+  addToolToAgent: (agentId: string, tool: Tool) => void
+  // Update a tool's status
+  updateToolStatus: (agentId: string, toolName: string, updates: Partial<Tool>) => void
+  // Set main manager
+  manager: { id: string; name: string; status: 'running' | 'idle' } | null
+  setManager: (manager: { id: string; name: string; status: 'running' | 'idle' } | null) => void
+
+  // Timeline
+  timelineEvents: TimelineEvent[]
+  addTimelineEvent: (event: Omit<TimelineEvent, 'id' | 'timestamp' | 'timestampMs'>) => void
+  clearTimeline: () => void
 
   // Connection
   connectionStatus: ConnectionStatus
@@ -84,6 +104,55 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedAgentId: null,
   setAgents: (agents) => set({ agents }),
   selectAgent: (id) => set({ selectedAgentId: id }),
+  updateAgent: (agent) => set((state) => {
+    const existing = state.agents.find(a => a.id === agent.id)
+    if (existing) {
+      return {
+        agents: state.agents.map(a => a.id === agent.id ? { ...a, ...agent } : a)
+      }
+    }
+    return { agents: [...state.agents, agent] }
+  }),
+  addToolToAgent: (agentId, tool) => set((state) => ({
+    agents: state.agents.map(a => {
+      if (a.id === agentId) {
+        const existingTools = a.tools || []
+        const existing = existingTools.find(t => t.name === tool.name)
+        if (existing) return a // Tool already exists
+        return { ...a, tools: [...existingTools, tool] }
+      }
+      return a
+    })
+  })),
+  updateToolStatus: (agentId, toolName, updates) => set((state) => ({
+    agents: state.agents.map(a => {
+      if (a.id === agentId && a.tools) {
+        return {
+          ...a,
+          tools: a.tools.map(t => t.name === toolName ? { ...t, ...updates } : t)
+        }
+      }
+      return a
+    })
+  })),
+  manager: null,
+  setManager: (manager) => set({ manager }),
+
+  // Timeline
+  timelineEvents: [],
+  addTimelineEvent: (event) => set((state) => {
+    const now = Date.now()
+    const newEvent: TimelineEvent = {
+      ...event,
+      id: `event_${now}_${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: formatTimestamp(now),
+      timestampMs: now,
+    }
+    // Keep last 20 events
+    const events = [newEvent, ...state.timelineEvents].slice(0, 20)
+    return { timelineEvents: events }
+  }),
+  clearTimeline: () => set({ timelineEvents: [] }),
 
   // Connection
   connectionStatus: 'disconnected',

@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, useCallback, useState } from 'react'
 import { useAppStore } from '../stores/appStore'
-import type { WSMessage } from '../types'
+import type { WSMessage, TimelineEvent } from '../types'
 
 const WS_URL = `ws://localhost:3001/ws`
 
@@ -27,7 +27,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const terminalExitBufferRef = useRef<number[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 
-  const { setConnectionStatus, setAgents, setCurrentProject } = useAppStore()
+  const { setConnectionStatus, setAgents, setCurrentProject, addTimelineEvent, setManager } = useAppStore()
 
   const connect = useCallback((sessionIdOverride?: string) => {
     console.log('[WS] connect called with override:', sessionIdOverride)
@@ -81,6 +81,15 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             break
           case 'agents_update':
             if (msg.agents) {
+              // Check if there's a main agent to set as manager
+              const mainAgent = msg.agents.find((a: any) => a.isMain)
+              if (mainAgent) {
+                setManager({
+                  id: mainAgent.id,
+                  name: mainAgent.name || 'Claude',
+                  status: mainAgent.status === 'running' || mainAgent.status === 'thinking' ? 'running' : 'idle',
+                })
+              }
               setAgents(msg.agents)
             }
             break
@@ -88,6 +97,18 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
             setConnectionStatus(msg.status || 'disconnected')
             if (msg.sessionId) {
               setCurrentProject(msg.sessionId)
+            }
+            break
+          case 'timeline_event':
+            // Handle timeline events from server
+            const timelineEvent = msg as unknown as TimelineEvent & { type: 'timeline_event' }
+            if (timelineEvent.agentId && timelineEvent.agentName && timelineEvent.event && timelineEvent.message) {
+              addTimelineEvent({
+                agentId: timelineEvent.agentId,
+                agentName: timelineEvent.agentName,
+                event: timelineEvent.event as 'started' | 'completed' | 'error' | 'thinking',
+                message: timelineEvent.message,
+              })
             }
             break
         }
@@ -107,7 +128,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       isConnectingRef.current = false
       setConnectionStatus('error')
     }
-  }, [currentSessionId, setConnectionStatus, setAgents, setCurrentProject])
+  }, [currentSessionId, setConnectionStatus, setAgents, setCurrentProject, addTimelineEvent, setManager])
 
   const sendInput = useCallback((data: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
