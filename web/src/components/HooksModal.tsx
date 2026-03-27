@@ -1,14 +1,6 @@
 import { useState } from 'react'
-import { CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react'
+import { X, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from './Dialog'
 import styles from './HooksModal.module.css'
 
 interface HooksModalProps {
@@ -59,14 +51,14 @@ export default function HooksModal({ onClose }: HooksModalProps) {
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Claude Hooks Setup</DialogTitle>
-          <DialogDescription>
-            Configure hooks to track agent events in Agent HQ
-          </DialogDescription>
-        </DialogHeader>
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.header}>
+          <h2>Claude Hooks Setup</h2>
+          <button className={styles.closeBtn} onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
 
         <div className={styles.content}>
           {/* Status Display */}
@@ -114,9 +106,7 @@ export default function HooksModal({ onClose }: HooksModalProps) {
               Hooks configured successfully! Agent events will now be tracked.
             </div>
           )}
-        </div>
 
-        <DialogFooter>
           {/* Action Buttons */}
           {!hooksConfigured && (
             <div className={styles.actions}>
@@ -146,8 +136,8 @@ export default function HooksModal({ onClose }: HooksModalProps) {
               </p>
             </div>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   )
 }
