@@ -97,6 +97,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 220px;
+  cursor: default;
 }
 
 .itemMeta {

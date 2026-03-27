@@ -86,7 +86,7 @@ export default function ProjectSelector() {
               onClick={() => handleSelectProject(project)}
             >
               <span className={`${styles.dot} ${styles[project.status]}`} />
-              <span className={styles.itemId}>{getProjectName(project.path)}</span>
+              <span className={styles.itemId} title={project.path}>{getProjectName(project.path)}</span>
               <span className={styles.itemMeta}>
                 {formatTimeAgo(project.lastActivity)} · {formatSize(project.size)}
               </span>
