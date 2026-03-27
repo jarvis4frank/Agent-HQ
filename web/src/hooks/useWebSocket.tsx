@@ -27,7 +27,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const terminalExitBufferRef = useRef<number[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 
-  const { setConnectionStatus, setAgents, setCurrentProject, addTimelineEvent, setManager } = useAppStore()
+  const { setConnectionStatus, setAgents, setCurrentProject, addTimelineEvent, setManager, resetStore } = useAppStore()
 
   const connect = useCallback((sessionIdOverride?: string) => {
     console.log('[WS] connect called with override:', sessionIdOverride)
@@ -161,17 +161,20 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
   const switchSession = useCallback((sessionId: string) => {
     console.log('[WS] switchSession called:', sessionId)
+    // Reset store when switching projects
+    resetStore()
     setCurrentProject(sessionId)
     setCurrentSessionId(sessionId)
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log('[WS] Already connected, sending subscribe')
-      wsRef.current.send(JSON.stringify({ type: 'subscribe', sessionId }))
-    } else {
-      console.log('[WS] Not connected, calling connect')
-      connect(sessionId)
+    // Close existing WebSocket if open
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close()
+      wsRef.current = null
     }
-  }, [setCurrentProject, connect])
+
+    // Connect to new session
+    connect(sessionId)
+  }, [resetStore, setCurrentProject, connect])
 
   const createSession = useCallback(async (workDir: string, initialPrompt?: string): Promise<string> => {
     const res = await fetch('/api/sessions', {

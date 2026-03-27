@@ -60,6 +60,8 @@ interface AppState {
   addToolToAgent: (agentId: string, tool: Tool) => void
   // Update a tool's status
   updateToolStatus: (agentId: string, toolName: string, updates: Partial<Tool>) => void
+  // Reset store for new project (clear agents, timeline, manager)
+  resetStore: () => void
   // Set main manager
   manager: { id: string; name: string; status: 'running' | 'idle' } | null
   setManager: (manager: { id: string; name: string; status: 'running' | 'idle' } | null) => void
@@ -153,6 +155,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     return { timelineEvents: events }
   }),
   clearTimeline: () => set({ timelineEvents: [] }),
+  resetStore: () => set({ 
+    agents: [],
+    selectedAgentId: null,
+    manager: null,
+    timelineEvents: [],
+  }),
 
   // Connection
   connectionStatus: 'disconnected',
