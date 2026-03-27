@@ -83,8 +83,10 @@ interface AppState {
   hooksHookScriptExists: boolean
   hooksConfiguredEvents: string[]
   hooksModalOpen: boolean
+  newProjectModalOpen: boolean
   setHooksStatus: (status: { configured: boolean; hookScriptExists: boolean; hooksConfigured: string[] }) => void
   setHooksModalOpen: (open: boolean) => void
+  setNewProjectModalOpen: (open: boolean) => void
   fetchHooksStatus: () => Promise<void>
 }
 
@@ -177,12 +179,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   hooksHookScriptExists: false,
   hooksConfiguredEvents: [],
   hooksModalOpen: false,
+  newProjectModalOpen: false,
   setHooksStatus: (status) => set({ 
     hooksConfigured: status.configured,
     hooksHookScriptExists: status.hookScriptExists,
     hooksConfiguredEvents: status.hooksConfigured,
   }),
   setHooksModalOpen: (open) => set({ hooksModalOpen: open }),
+  setNewProjectModalOpen: (open) => set({ newProjectModalOpen: open }),
   fetchHooksStatus: async () => {
     const status = await fetchHooksStatusFromApi()
     set({ 

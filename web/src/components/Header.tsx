@@ -2,6 +2,7 @@ import { Maximize2, Minimize2, Link, Plus } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
 import IconButton from './IconButton'
+import NewProjectModal from './NewProjectModal'
 import styles from './Header.module.css'
 
 interface HeaderProps {
@@ -9,9 +10,10 @@ interface HeaderProps {
 }
 
 export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
-  const { terminalMode, setTerminalMode, hooksConfigured, setHooksModalOpen } = useAppStore()
+  const { terminalMode, setTerminalMode, hooksConfigured, setHooksModalOpen, newProjectModalOpen, setNewProjectModalOpen } = useAppStore()
 
   return (
+    <>
     <header className={styles.header}>
       <div className={styles.left}>
         <div className={styles.logo}>
@@ -23,11 +25,7 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
           <IconButton
             icon={Plus}
             label="New Project"
-            onClick={() => {
-              // Trigger new project creation in ProjectSelector
-              const event = new CustomEvent('newProject')
-              window.dispatchEvent(event)
-            }}
+            onClick={() => setNewProjectModalOpen(true)}
             variant="primary"
           />
         </div>
@@ -55,5 +53,8 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
         />
       </div>
     </header>
+
+    {newProjectModalOpen && <NewProjectModal onClose={() => setNewProjectModalOpen(false)} />}
+    </>
   )
 }
