@@ -6,7 +6,11 @@ import { useWebSocket } from '../hooks/useWebSocket'
 import styles from './TerminalPanel.module.css'
 import '@xterm/xterm/css/xterm.css'
 
-export default function TerminalPanel() {
+interface TerminalPanelProps {
+  className?: string
+}
+
+export default function TerminalPanel({ className }: TerminalPanelProps) {
   const terminalRef = useRef<HTMLDivElement>(null)
   const xtermRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -114,7 +118,7 @@ export default function TerminalPanel() {
   if (!isVisible) return null
 
   return (
-    <div className={`${styles.container} terminal-panel`}>
+    <div className={`${styles.container} terminal-panel ${className || ''}`}>
       <div className={`${styles.header} header`}>
         <span className={styles.title}>Terminal</span>
         <div className={styles.headerRight}>

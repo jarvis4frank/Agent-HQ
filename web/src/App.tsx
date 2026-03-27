@@ -28,8 +28,8 @@ function AppContent() {
     <div className={`app terminal-${terminalMode}`}>
       <Header onReconnect={reconnect} />
       <main className="main-content">
-        {terminalMode !== 'full' && <AgentPanel />}
-        {terminalMode !== 'collapsed' && <TerminalPanel />}
+        {terminalMode !== 'full' && <AgentPanel className="agent-panel" />}
+        {terminalMode !== 'collapsed' && <TerminalPanel className="terminal-panel" />}
       </main>
       <StatusBar />
       {hooksModalOpen && <HooksModal onClose={() => useAppStore.getState().setHooksModalOpen(false)} />}

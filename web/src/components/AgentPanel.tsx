@@ -90,7 +90,11 @@ function AgentCard({ agent, isSelected, onClick }: AgentCardProps) {
   )
 }
 
-export default function AgentPanel() {
+interface AgentPanelProps {
+  className?: string
+}
+
+export default function AgentPanel({ className }: AgentPanelProps) {
   const { agents, selectedAgentId, selectAgent, connectionStatus } = useAppStore()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -99,7 +103,7 @@ export default function AgentPanel() {
   }
 
   return (
-    <div className={`${styles.container} ${isCollapsed ? styles.collapsed : ''}`}>
+    <div className={`${styles.container} agent-panel ${isCollapsed ? styles.collapsed : ''} ${className || ''}`}>
       <div className={styles.header}>
         <span className={styles.title}>Agents</span>
         <div className={styles.headerRight}>

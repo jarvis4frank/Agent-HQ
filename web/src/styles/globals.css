@@ -129,6 +129,21 @@ input:focus, textarea:focus {
   width: 50% !important;
   min-width: 0 !important;
   max-width: 50% !important;
+  box-sizing: border-box !important;
+}
+
+/* Remove padding in half mode */
+.app.terminal-half .agent-panel [class*="container"] {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.app.terminal-half .terminal-panel [class*="container"] {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+/* Hide Terminal header in fullscreen */
+.app.terminal-full .terminal-panel .header {
+  display: none !important;
 }
 
 /* Full: Terminal 100%, Agent hidden */
@@ -141,10 +156,6 @@ input:focus, textarea:focus {
   flex: none !important;
   width: 100% !important;
   max-width: 100% !important;
-}
-/* Hide Terminal header in fullscreen */
-.app.terminal-full .terminal-panel .header {
-  display: none !important;
 }
 
 /* Smooth transitions */
