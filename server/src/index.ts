@@ -597,15 +597,29 @@ echo "Hook processed: $HOOK_EVENT"
       }
     }
     
-    // Update hooks configuration
+    // Update hooks configuration - Claude Code format
     settings.hooks = {
-      HookEnabled: true,
-      Hooks: [
-        { Event: 'SubagentStart', File: 'send-hook.sh' },
-        { Event: 'SubagentStop', File: 'send-hook.sh' },
-        { Event: 'Stop', File: 'send-hook.sh' },
-        { Event: 'UserPromptSubmit', File: 'send-hook.sh' },
-      ],
+      SubagentStart: [{
+        matcher: "",
+        hooks: [{
+          type: "command",
+          command: "bash ~/.claude/hooks/send-hook.sh"
+        }]
+      }],
+      SubagentStop: [{
+        matcher: "",
+        hooks: [{
+          type: "command",
+          command: "bash ~/.claude/hooks/send-hook.sh"
+        }]
+      }],
+      UserPromptSubmit: [{
+        matcher: "",
+        hooks: [{
+          type: "command",
+          command: "bash ~/.claude/hooks/send-hook.sh"
+        }]
+      }],
     }
     
     writeFileSync(CLAUDE_SETTINGS_FILE, JSON.stringify(settings, null, 2))
