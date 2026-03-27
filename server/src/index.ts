@@ -531,7 +531,16 @@ app.get('/api/sessions', (_req, res) => {
 
   for (const session of allSessions) {
     if (!sessions.has(session.id)) {
-      mergedSessions.push(session)
+      // Only push serializable fields
+      mergedSessions.push({
+        id: session.id,
+        path: session.path,
+        status: session.status,
+        lastActivity: session.lastActivity,
+        size: session.size,
+        workDir: session.workDir,
+        sessionName: session.sessionName,
+      })
     }
   }
 
@@ -540,7 +549,20 @@ app.get('/api/sessions', (_req, res) => {
 
 // Get all agents
 app.get('/api/agents', (_req, res) => {
-  res.json({ agents: Array.from(agents.values()) })
+  // Filter out non-serializable properties
+  const serializableAgents = Array.from(agents.values()).map(agent => ({
+    id: agent.id,
+    name: agent.name,
+    role: agent.role,
+    status: agent.status,
+    currentTask: agent.currentTask,
+    isMain: agent.isMain,
+    sessionId: agent.sessionId,
+    startedAt: agent.startedAt,
+    lastMessage: agent.lastMessage,
+    tools: agent.tools,
+  }))
+  res.json({ agents: serializableAgents })
 })
 
 // Claude Code Hook endpoint

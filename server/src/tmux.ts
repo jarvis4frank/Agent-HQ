@@ -49,9 +49,12 @@ export interface TmuxSession {
 
 /**
  * Get the session name for a project
+ * Sanitize projectId to be a valid tmux session name
  */
 export function getSessionName(projectId: string): string {
-  return `${SESSION_PREFIX}${projectId}`
+  // Replace invalid characters with underscores
+  const sanitized = projectId.replace(/[\/\\:\s]/g, '-').replace(/-+/g, '-')
+  return `${SESSION_PREFIX}${sanitized}`
 }
 
 /**
