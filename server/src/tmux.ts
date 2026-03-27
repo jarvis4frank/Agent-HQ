@@ -3,8 +3,9 @@ import { existsSync } from 'fs'
 
 // ============== Configuration ==============
 
-const TMUX_SOCKET = 'agenthq'
-const TMUX_PREFIX = 'agenthq'
+// Use default socket (avoid -L flag which has issues on macOS)
+// Session names will be prefixed to avoid conflicts
+const SESSION_PREFIX = 'agenthq-'
 
 // ============== Utility Functions ==============
 
@@ -24,9 +25,8 @@ function sanitizeInput(input: string): string {
 /**
  * Run a tmux command with the dedicated socket
  */
-function tmuxCommand(args: string[], useSocket = true): string {
-  const socketArg = useSocket ? ['-L', TMUX_SOCKET] : []
-  const cmd = ['tmux', ...socketArg, ...args].join(' ')
+function tmuxCommand(args: string[]): string {
+  const cmd = ['tmux', ...args].join(' ')
   try {
     return execSync(cmd, { encoding: 'utf8', timeout: 5000 }).trim()
   } catch (error: any) {
@@ -51,7 +51,7 @@ export interface TmuxSession {
  * Get the session name for a project
  */
 export function getSessionName(projectId: string): string {
-  return `${TMUX_PREFIX}-${projectId}`
+  return `${SESSION_PREFIX}${projectId}`
 }
 
 /**
@@ -189,7 +189,7 @@ export function listSessions(): TmuxSession[] {
     const sessions: TmuxSession[] = []
     for (const line of output.split('\n')) {
       const [name] = line.split(':')
-      if (name.startsWith(TMUX_PREFIX)) {
+      if (name.startsWith(SESSION_PREFIX)) {
         sessions.push({
           name,
           path: '',
@@ -227,7 +227,6 @@ export function getSessionInfo(sessionName: string): TmuxSession | null {
  */
 export function initializeTmux(): void {
   const tmuxDir = process.env.HOME ? `${process.env.HOME}/.tmux` : '/tmp/tmux'
-  const socketPath = `${tmuxDir}/${TMUX_SOCKET}`
   
   // Create directory if it doesn't exist
   try {
@@ -239,7 +238,7 @@ export function initializeTmux(): void {
     // Directory creation may fail, continue anyway
   }
   
-  console.log(`[Tmux] Using socket: ${TMUX_SOCKET}`)
+  console.log(`[Tmux] Using default socket with prefix: ${SESSION_PREFIX}`)
 }
 
 /**
