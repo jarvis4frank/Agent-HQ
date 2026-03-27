@@ -125,8 +125,9 @@ input:focus, textarea:focus {
 /* Half: Agent 50%, Terminal 50% */
 .app.terminal-half .agent-panel,
 .app.terminal-half .terminal-panel {
-  flex: 0 0 50%;
-  width: 50%;
+  flex: 0 0 50% !important;
+  width: 50% !important;
+  min-width: 0 !important;
 }
 
 /* Full: Terminal 100%, Agent hidden */
