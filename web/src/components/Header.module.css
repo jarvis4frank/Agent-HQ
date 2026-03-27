@@ -14,7 +14,7 @@
   align-items: center;
   gap: 24px;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .logo {
