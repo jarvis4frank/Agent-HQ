@@ -28,7 +28,7 @@ export default function StatusBar() {
           {currentProject ? (
             <>
               <span>Project:</span>
-              <span className={styles.sessionId}>{getProjectName(currentProject.path)}</span>
+              <span className={styles.sessionId} title={currentProject.path}>{getProjectName(currentProject.path)}</span>
             </>
           ) : (
             <span>No project selected</span>
