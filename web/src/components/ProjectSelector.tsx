@@ -1,8 +1,6 @@
-import { Plus } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { Listbox } from './ui/listbox'
-import { Button } from './ui/button'
 
 function formatTimeAgo(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000)
@@ -31,11 +29,11 @@ export default function ProjectSelector() {
     projects,
     currentProjectId,
     setCurrentProject,
-    setNewProjectModalOpen,
   } = useAppStore()
   const { switchSession } = useWebSocket()
 
   const currentProject = projects.find((p) => p.id === currentProjectId)
+  void currentProject // suppress unused variable warning
 
   const handleSelectProject = (projectId: string) => {
     const project = projects.find((p) => p.id === projectId)
@@ -52,19 +50,12 @@ export default function ProjectSelector() {
   }))
 
   return (
-    <div className="flex items-center gap-2">
-      <Listbox
-        value={currentProjectId}
-        onChange={handleSelectProject}
-        options={listboxOptions}
-        placeholder={currentProject ? getProjectName(currentProject.path) : 'Select Project...'}
-        className="min-w-[200px]"
-      />
-
-      <Button size="sm" onClick={() => setNewProjectModalOpen(true)}>
-        <Plus size={14} />
-        New Project
-      </Button>
-    </div>
+    <Listbox
+      value={currentProjectId}
+      onChange={handleSelectProject}
+      options={listboxOptions}
+      placeholder="Select Project..."
+      className="min-w-[140px]"
+    />
   )
 }

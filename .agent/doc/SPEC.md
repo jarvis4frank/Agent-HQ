@@ -1,309 +1,62 @@
-# Agent HQ - 專案規格定義 (完整版)
+# SPEC.md - UI Migration Plan
 
-## 1. 專案概述
+## 1. 目標
 
-| 項目 | 內容 |
+將現有專案全面從 CSS Module 遷移到 TailwindCSS，並確保使用 Headless UI 替代 shadcn/ui。
+
+## 2. 現況分析
+
+### 2.1 CSS Module 檔案（需遷移）
+
+| 檔案 | 元件 |
 |------|------|
-| **專案名稱** | Agent HQ |
-| **類型** | CLI/TUI 桌面應用程式 |
-| **核心功能** | 多 AI Agent 協作監控與互動界面，RPG 遊戲風格視覺化 |
-| **目標用戶** | 個人開發者、AI 愛好者 |
-| **技術堆疊** | TypeScript + Ink (React-style CLI) |
-| **Agent 引擎** | Claude Code (Agent Team) |
-| **視覺風格** | Pixel Art RPG (參考 PIXELHQ / CraftPix.net) |
-| **設計原則** | **基於 Claude Code 介面，不額外疊加資訊** |
+| `StatusBar.module.css` | StatusBar |
+| `HooksModal.module.css` | HooksModal |
+| `NewProjectModal.module.css` | NewProjectModal |
+| `IconButton.module.css` | IconButton |
+| `Header.module.css` | Header |
+| `TerminalPanel.module.css` | TerminalPanel |
+| `AgentPanel.module.css` | AgentPanel |
 
----
+### 2.2 檢查結果
 
-## 2. 功能需求
+- **shadcn/ui**: 目前專案未使用（✅）
+- **@/components/ui**: 目前專案未使用（✅）
 
-### 2.1 多 Agent 狀態監控
-- 同時顯示多個 Agent 的運行狀態
-- **狀態來源**：直接採用 Claude Code 提供的狀態資訊（不多加詮釋）
-- 即時更新狀態（每秒或按需求更新）
-- **Agent 數量動態**：由 Claude Code 根據開發需求動態生成，數量不固定
+### 2.3 Headless UI 使用情況
 
-### 2.1.1 動態 Agent 生成需求
+| 元件 | 當前實作 | 需求 |
+|------|----------|------|
+| Listbox (ProjectSelector) | ✅ 已使用 @headlessui/react | 維持現有 |
+| Dialog (Modals) | ⚠️ 需遷移至 @headlessui/react | 改用 Headless UI |
+| Popover/Menu | ⚠️ 需檢查 | 改用 Headless UI |
 
-**問題描述**：
-- Claude Code 可以根據任務需求動態生成多個 Agent
-- Agent 的數量在執行期間可能會增減
-- 每個 Agent 需要有不同的視覺風格以便區分
+## 3. 遷移計劃
 
-**需求**：
-- 系統能夠處理任意數量的 Agent
-- 需要設計一個機制來決定每個 Agent 的視覺風格
-- 新增的 Agent 應該能自動獲得視覺表示
+### Phase 1: 基礎設施檢查
+- [ ] 確認 TailwindCSS 配置正確
+- [ ] 確認 @headlessui/react 已安裝
 
-**待解決的問題**：
-- 如何根據 Agent 的名稱/角色自動對應視覺風格？
-- 當沒有預設對應時，如何決定視覺風格？
-- 如何區分視覺上相似的 Agent？
+### Phase 2: 小型元件遷移（先測試流程）
+- [ ] IconButton - 已經內聯樣式，移除 CSS Module
+- [ ] StatusBar - 相對簡單的佈局
 
-**可能的解決方向（待研究）**：
-- 名稱映射：根據 agent 名稱自動對應風格
-- 顏色變化：同一個 sprite 不同顏色來區分
-- 順序映射：依序套用不同風格
-- 預設風格：無法對應時使用預設
+### Phase 3: Modal 遷移
+- [ ] HooksModal - 改用 Headless UI Dialog + TailwindCSS
+- [ ] NewProjectModal - 改用 Headless UI Dialog + TailwindCSS
 
-### 2.2 Agent 視覺化 - RPG 風格
+### Phase 4: 複雜元件遷移
+- [ ] Header - 改用 TailwindCSS
+- [ ] TerminalPanel - 改用 TailwindCSS
+- [ ] AgentPanel - 改用 TailwindCSS
 
-#### 2.2.1 視覺設計概念
+### Phase 5: 清理
+- [ ] 移除未使用的 .module.css 檔案
+- [ ] 驗證所有功能正常
 
-**設計原則**：
-- 根據 Claude Code 提供的狀態資訊動態調整視覺
-- 不自行定義狀態類型，忠實呈現 Claude Code 的狀態
+## 4. 驗證標準
 
-**場景設計**：每個 Agent 有自己的「工作站」（像素風辦公室電腦桌場景）
-
-**人物姿勢與動畫（ MVP 優先策略）**：
-
-| 狀態 | 姿勢描述 | 頭上圖示 | 備註 |
-|------|----------|----------|------|
-| **idle（閒置）** | 站著或走動（用現成素材） | 💤 | MVP 用 walk/idle 姿勢 |
-| **thinking（思考中）** | 站著不動 | 💭 | |
-| **working（工作中）** | 走動/工作動畫 | ⚡ | |
-| **error（錯誤）** | hurt 姿勢 | ❌ | |
-| **waiting（等待回饋）** | idle + 圖示 | ⚠️ 驚嘆號 | 點擊可展開對話 |
-
-**備註**：目前使用現成素材的 idle/walk/run 姿勢表示狀態，後續可用 PixelLab.ai 生成「坐著打電腦」專屬姿勢。
-
-**視覺元素**：
-- 像素風人物角色（32x32 或 64x64）
-- 辦公室場景（電腦桌、螢幕、鍵盤、滑鼠、椅子）
-- 狀態動畫過渡
-- 頭上對話氣泡/驚嘆號
-
-#### 2.2.2 Agent 角色（範例）
-
-**說明**：以下是常見的預設角色，但實際上 Agent 的數量和角色是由 Claude Code 動態決定的。
-
-| Agent ID | 角色名稱 | 適合任務 | 視覺風格 |
-|----------|----------|----------|----------|
-| research | 🔬 研究員 | 搜尋、分析、學習 | 戴眼鏡、拿書本 |
-| coder | 💻 工程師 | 寫 code、debug | 戴耳機、敲鍵盤 |
-| reviewer | 🔍 審查員 | code review、優化 | 放大鏡、嚴肅表情 |
-| executor | ⚡ 執行者 | 執行命令、自動化 | 機械手臂/齒輪 |
-
-**注意**：Claude Code 可能會生成其他角色（如 data-analyst, security-audit 等），視覺風格對應機制需另行研究設計。
-
-#### 2.2.3 互動設計
-
-- **點擊 Agent**：展開對話面板
-- **驚嘆號氣泡**：點擊查看待處理事項
-- **對話氣泡**：顯示 Agent 想說的話
-- **狀態過渡**：流暢的動畫切換
-
-### 2.3 個別互動（與 Claude Code Agent Team 對話）
-- 選擇特定 Agent 進行對話
-- 透過 Claude Code 執行指令
-- 獨立的對話視窗/區域
-- 對話歷史記錄
-- 支援 Agent Team 多對話
-
-### 2.4 可收縮 CLI 視窗
-- 主對話界面可展開/收起
-- 預設收起，展開後可與主要 Agent 互動
-- 快捷鍵切換（Tab 或 自訂）
-
-### 2.5 MVP 優先
-- CLI-based TUI 即可
-- 使用現成素材的現成姿勢（idle/walk/run）表示狀態
-- 搭配頭上狀態圖示與文字標示
-- 重點在有趣、可互動的圖形化界面
-
----
-
-## 3. 技術架構
-
-### 3.1 技術選型
-
-| 元件 | 選擇 | 版本 |
-|------|------|------|
-| 語言 | TypeScript | 18+ |
-| TUI 框架 | Ink | ^4.0.0 |
-| UI Library | React | ^18.0.0 |
-| 類型定義 | @types/react | ^18 |
-| Agent 引擎 | Claude Code | 最新 |
-| 像素素材 | CraftPix.net 等免費素材 | - |
-
-### 3.2 專案結構
-
-```
-agent-hq/
-├── .agent/
-│   └── doc/
-│       ├── SPEC.md
-│       ├── PLAN.md
-│       ├── TASK.md
-│       └── progress.md
-├── assets/
-│   ├── characters/         # 像素人物圖
-│   │   ├── research/
-│   │   ├── coder/
-│   │   ├── reviewer/
-│   │   └── executor/
-│   └── scenes/             # 場景圖
-│       └── office/         # 辦公室場景
-├── src/
-│   ├── index.tsx           # 入口點
-│   ├── App.tsx             # 主應用 Component
-│   ├── components/
-│   │   ├── AgentSprite.tsx # 像素人物顯示
-│   │   ├── AgentStation.tsx# 工作站場景
-│   │   ├── StatusIcon.tsx   # 頭上狀態圖示
-│   │   ├── ChatPanel.tsx    # 對話面板
-│   │   └── StatusBar.tsx    # 狀態列
-│   ├── agents/
-│   │   ├── types.ts         # Agent 類型定義
-│   │   ├── manager.ts       # Agent 管理器
-│   │   └── ClaudeAdapter.ts # Claude Code 適配器
-│   ├── config/
-│   │   └── agents.ts        # Agent 設定
-│   └── utils/
-│       └── logger.ts       # 日誌工具
-├── package.json
-├── tsconfig.json
-└── SPEC.md
-```
-
-### 3.3 Agent 整合
-
-> ⚠️ **重要設計原則**：Agent HQ 是 Claude Code 的**視覺化介面**，所有功能設計都應基於 Claude Code 本身提供的資訊，不額外疊加或詮釋。
-
-**Claude Code Agent Team**：
-- 透過 Claude Code 的 `--agents` 功能定義多個 Agent
-- 每個 Agent 有明確的角色與職責
-- 透過 subprocess 與 Claude Code 通訊
-- 即時接收輸出並更新狀態
-
-**設計原則**：
-- **基於 Claude Code 本身**：所有 Agent 的狀態與訊息來源應直接來自 Claude Code 的輸出
-- **不疊加自訂資訊**：不另行添加或詮釋額外的狀態資訊
-- **忠實呈現**：Agent HQ 作為 Claude Code 的視覺化介面，忠實呈現其提供的狀態與對話內容
-
-### 3.4 視覺素材來源
-
-#### 角色素材
-- **CraftPix.net** - 免費角色 Sprite Sheets (warrior, city man 等)
-- **Universal LPC Spritesheet** - 開源素材生成器 (https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/)
-- **PixelLab.ai** - AI 生成自訂姿勢（**預計後續**生成「坐著打電腦」專屬姿勢）
-
-#### 場景素材
-- **OpenGameArt** - Pixel Art Lab/Office Tiles (https://opengameart.org/content/pixel-art-laboffice-tiles)
-- **itch.io** - Free office pixel art, Pixel Office Asset Pack, KR Urban Modern Interiors Tileset
-
-#### MVP 實作策略
-- 第一階段使用現成素材的 idle/walk/run 姿勢表示狀態
-- 搭配頭上狀態圖示（💤💭⚡❌⚠️）和文字標示
-- 「坐著打電腦」姿勢預計**後續**用 PixelLab.ai 生成
-
----
-
-## 4. 使用者流程
-
-### 4.1 啟動流程
-```
-1. 使用者輸入命令啟動 Agent HQ
-2. 系統載入 Agent 設定
-3. 初始化 Claude Code subprocess
-4. 顯示 RPG 風格工作場景（像素辦公室）
-5. 每個 Agent 在自己的工作站在電腦前（idle 狀態）
-6. 使用者選擇 Agent 進行互動
-```
-
-### 4.2 互動流程
-```
-1. Agent 需要回饋 → 站起來，頭上顯示驚嘆號 ⚠️
-2. 使用者點擊 Agent/驚嘆號 → 對話面板展開
-3. 使用者輸入訊息 → Agent 變為 thinking 狀態 💭
-4. Agent 回覆 → 狀態回到 working → idle
-5. 有錯誤 → Agent 顯示 hurt 姿勢 ❌
-```
-
-### 4.3 狀態機
-
-```
-┌─────────┐
-│  idle   │ ← 預設狀態，使用 idle/walk 姿勢
-└────┬────┘
-     │ 收到新任務
-     ▼
-┌─────────┐
-│ working │ ← 使用 run 姿勢
-└────┬────┘
-     │ 需要思考
-     ▼
-┌──────────┐
-│ thinking │ ← 站著不動
-└────┬─────┘
-     │ 完成
-     ▼
-┌─────────┐
-│  idle   │
-└────┬────┘
-     │ 需要用戶回饋
-     ▼
-┌──────────┐
-│ waiting  │ ← 站立，頭上有驚嘆號 ⚠️
-└────┬─────┘
-     │ 出錯
-     ▼
-┌────────┐
-│ error  │ ← hurt 姿勢
-└───────┘
-```
-
----
-
-## 5. 驗收標準
-
-### 5.1 功能驗收
-- [ ] 可同時顯示 3+ Agent 的狀態
-- [ ] 每個 Agent 有 RPG 風格像素視覺表示
-- [ ] 人物根據狀態變換姿勢動畫（使用現成素材）
-- [ ] 頭上顯示狀態圖示（驚嘆號、氣泡等）
-- [ ] 可選擇特定 Agent 對話
-- [ ] 主對話界面可展開/收起
-- [ ] 狀態即時更新
-- [ ] MVP 可正常運作
-
-### 5.2 技術驗收
-- [ ] TypeScript 編譯無錯誤
-- [ ] Ink 應用可正常啟動
-- [ ] 像素素材正確載入與顯示
-- [ ] 模組化架構，易於擴充
-- [ ] 錯誤處理完善
-
-### 5.3 使用者體驗
-- [ ] 啟動時間 < 3 秒
-- [ ] 互動延遲 < 1 秒（不含網路）
-- [ ] 清楚的狀態動畫提示
-- [ ] 直覺的 RPG 風格操作方式
-
----
-
-## 6. 預估時程
-
-| 階段 | 工作內容 | 預估時間 |
-|------|----------|----------|
-| T1 | 環境搭建 + 基本框架 | 1-2 天 |
-| T2 | RPG 像素視覺設計 + Agent 卡片 | 2-3 天 |
-| T3 | 人物姿勢動畫 + 狀態圖示 | 2-3 天 |
-| T4 | 對話功能 + 點擊互動 | 2-3 天 |
-| T5 | 可收縮視窗 + 動畫過渡 | 1-2 天 |
-| T6 | 測試與優化 + Claude Code 整合 | 2-3 天 |
-
-**總計：約 10-16 天**
-
----
-
-## 7. 風險與緩解
-
-| 風險 | 機率 | 影響 | 緩解措施 |
-|------|------|------|----------|
-| 像素素材取得 | 低 | 低 | 使用免費開源素材（已有多個來源）|
-| 坐姿素材缺乏 | 中 | 低 | 預計後續用 PixelLab.ai 生成 |
-| Claude Code subprocess 整合困難 | 中 | 高 | 先用 Mock 資料開發 MVP |
-| Ink 動畫支援有限 | 中 | 中 | 使用文字動畫或預設圖示 |
-| 狀態同步問題 | 中 | 中 | 使用事件驅動架構 |
+每次遷移後：
+1. 截圖比對外觀是否一致
+2. 功能測試正常運作
+3. 無 console error

@@ -1,37 +1,38 @@
 import { Maximize2, Minimize2, Link } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
+import NewProjectButton from './NewProjectButton'
 import IconButton from './IconButton'
 import NewProjectModal from './NewProjectModal'
-import styles from './Header.module.css'
 
 interface HeaderProps {
   onReconnect: () => void
 }
 
 export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
-  const { terminalMode, setTerminalMode, hooksConfigured, setHooksModalOpen, newProjectModalOpen, setNewProjectModalOpen } = useAppStore()
+  const { terminalMode, setTerminalMode, hooksConfiguredEvents, setHooksModalOpen, newProjectModalOpen, setNewProjectModalOpen } = useAppStore()
 
   return (
     <>
-    <header className={styles.header}>
-      <div className={styles.left}>
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>◉</span>
-          <span className={styles.logoText} title="Agent HQ">Agent HQ</span>
+    <header className="h-12 bg-bg-secondary border-b border-border flex items-center justify-between px-4 flex-shrink-0">
+      <div className="flex items-center gap-4 whitespace-nowrap overflow-visible">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xl text-accent-blue">◉</span>
+          <span className="font-semibold text-sm text-text-primary whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" title="Agent HQ">Agent HQ</span>
         </div>
-        <div className={styles.projectArea}>
+        <div className="flex items-center gap-2">
           <ProjectSelector />
+          <NewProjectButton />
         </div>
       </div>
 
-      <div className={styles.right}>
+      <div className="flex items-center gap-2">
         {/* Hooks Status Indicator */}
         <IconButton
           icon={Link}
-          label={hooksConfigured ? 'Hooks configured' : 'Hooks not configured'}
+          label={hooksConfiguredEvents.length > 0 ? 'Hooks configured' : 'Hooks not configured'}
           onClick={() => setHooksModalOpen(true)}
-          variant={hooksConfigured ? 'default' : 'default'}
+          variant={hooksConfiguredEvents.length > 0 ? 'success' : 'warning'}
         />
 
         {/* Terminal Controls - Single toggle button */}

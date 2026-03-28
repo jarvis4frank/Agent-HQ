@@ -32,7 +32,7 @@ function AppContent() {
         {terminalMode !== 'collapsed' && <TerminalPanel className="terminal-panel" />}
       </main>
       <StatusBar />
-      {hooksModalOpen && <HooksModal onClose={() => useAppStore.getState().setHooksModalOpen(false)} />}
+      {hooksModalOpen && <HooksModal isOpen={hooksModalOpen} onClose={() => useAppStore.getState().setHooksModalOpen(false)} />}
     </div>
   )
 }

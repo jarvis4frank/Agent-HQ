@@ -72,3 +72,23 @@
 .icon-btn-ghost:hover:not(:disabled) {
   background: var(--bg-tertiary);
 }
+
+/* Success variant - for configured state */
+.icon-btn-success {
+  background: rgba(46, 204, 113, 0.5) !important;
+  color: #2ecc71 !important;
+}
+
+.icon-btn-success:hover:not(:disabled) {
+  background: rgba(46, 204, 113, 0.7) !important;
+}
+
+/* Warning variant - for unconfigured state */
+.icon-btn-warning {
+  background: rgba(241, 196, 15, 0.5) !important;
+  color: #f1c40f !important;
+}
+
+.icon-btn-warning:hover:not(:disabled) {
+  background: rgba(241, 196, 15, 0.7) !important;
+}

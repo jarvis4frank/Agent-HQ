@@ -3,7 +3,6 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
-import styles from './TerminalPanel.module.css'
 import '@xterm/xterm/css/xterm.css'
 
 interface TerminalPanelProps {
@@ -117,17 +116,24 @@ export default function TerminalPanel({ className }: TerminalPanelProps) {
 
   if (!isVisible) return null
 
+  const statusDotColor = {
+    connected: 'bg-accent-green',
+    connecting: 'bg-accent-yellow',
+    disconnected: 'bg-text-muted',
+    error: 'bg-accent-red',
+  }[connectionStatus]
+
   return (
-    <div className={`${styles.container} terminal-panel ${className || ''}`}>
-      <div className={`${styles.header} header`}>
-        <span className={styles.title}>Terminal</span>
-        <div className={styles.headerRight}>
-          <span className={`${styles.statusDot} ${styles[connectionStatus]}`} />
+    <div className={`flex flex-col bg-bg-secondary border border-border rounded-md overflow-hidden transition-all duration-250 terminal-panel ${(terminalMode as string) !== 'collapsed' ? 'h-full' : 'h-10'} ${className || ''}`}>
+      <div className="flex items-center justify-between px-3 py-2 bg-bg-tertiary border-b border-border min-h-10">
+        <span className="text-[13px] font-semibold text-text-secondary uppercase tracking-wide">Terminal</span>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${statusDotColor} transition-colors duration-100`} />
         </div>
       </div>
 
-      <div className={styles.terminalWrapper}>
-        <div ref={terminalRef} className={styles.terminal} />
+      <div className="flex-1 relative bg-terminal-bg min-h-[200px]">
+        <div ref={terminalRef} className="w-full h-full p-2" />
       </div>
     </div>
   )
