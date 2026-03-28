@@ -1,4 +1,4 @@
-import { Maximize2, Minimize2, Link, Plus } from 'lucide-react'
+import { Maximize2, Minimize2, Link } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
 import ProjectSelector from './ProjectSelector'
 import IconButton from './IconButton'
@@ -22,12 +22,6 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
         </div>
         <div className={styles.projectArea}>
           <ProjectSelector />
-          <IconButton
-            icon={Plus}
-            label="New Project"
-            onClick={() => setNewProjectModalOpen(true)}
-            variant="primary"
-          />
         </div>
       </div>
 
