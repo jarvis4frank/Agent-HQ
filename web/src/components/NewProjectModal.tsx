@@ -1,15 +1,21 @@
-import { Fragment, useState } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { useAppStore } from '../stores/appStore'
 
 interface NewProjectModalProps {
   onClose: () => void
+  isOpen: boolean
 }
 
-export default function NewProjectModal({ onClose }: NewProjectModalProps) {
+export default function NewProjectModal({ onClose, isOpen }: NewProjectModalProps) {
   const { fetchProjects } = useAppStore()
-  
+
   const [workDir, setWorkDir] = useState('')
   const [initialPrompt, setInitialPrompt] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,7 +23,7 @@ export default function NewProjectModal({ onClose }: NewProjectModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!workDir.trim()) {
       setError('Working directory is required')
       return
@@ -30,7 +36,7 @@ export default function NewProjectModal({ onClose }: NewProjectModalProps) {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           path: workDir.trim(),
           initialPrompt: initialPrompt.trim() || undefined,
         }),
@@ -41,7 +47,7 @@ export default function NewProjectModal({ onClose }: NewProjectModalProps) {
       if (data.project) {
         // Refresh projects list
         await fetchProjects()
-        
+
         // If there's an initial prompt, we could send it to the terminal
         // For now, just close the modal - the project will appear in the list
         onClose()
@@ -56,115 +62,76 @@ export default function NewProjectModal({ onClose }: NewProjectModalProps) {
   }
 
   return (
-    <Transition appear show={true} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-200"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-150"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/60" />
-        </Transition.Child>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>New Project</DialogTitle>
+        </DialogHeader>
 
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-200"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-150"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Error Message */}
+          {error && (
+            <div className="rounded-sm border border-red-900/30 bg-red-900/10 px-3 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Work Directory Input */}
+          <div className="flex flex-col gap-2">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="workDir"
             >
-              <Dialog.Panel className="w-full max-w-[480px] transform overflow-hidden rounded-lg border border-slate-700 bg-[#1e232b] p-0 shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
-                  <Dialog.Title className="text-base font-semibold text-slate-100">
-                    New Project
-                  </Dialog.Title>
-                  <button
-                    onClick={onClose}
-                    className="flex h-7 w-7 items-center justify-center rounded-sm border-none bg-transparent text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <form onSubmit={handleSubmit} className="px-5 py-5">
-                  {/* Error Message */}
-                  {error && (
-                    <div className="mb-4 rounded-sm border border-red-900/30 bg-red-900/10 px-3 py-3 text-sm text-red-400">
-                      {error}
-                    </div>
-                  )}
-
-                  {/* Work Directory Input */}
-                  <div className="mb-4">
-                    <label 
-                      className="mb-2 block text-sm font-medium text-slate-200" 
-                      htmlFor="workDir"
-                    >
-                      Working Directory
-                    </label>
-                    <input
-                      id="workDir"
-                      type="text"
-                      className="w-full rounded-sm border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 transition-colors placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
-                      placeholder="/path/to/project"
-                      value={workDir}
-                      onChange={(e) => setWorkDir(e.target.value)}
-                      disabled={loading}
-                    />
-                  </div>
-
-                  {/* Initial Prompt Input */}
-                  <div className="mb-4">
-                    <label 
-                      className="mb-2 block text-sm font-medium text-slate-200" 
-                      htmlFor="initialPrompt"
-                    >
-                      Initial Prompt
-                    </label>
-                    <textarea
-                      id="initialPrompt"
-                      className="w-full min-h-[100px] resize-y rounded-sm border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 transition-colors placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
-                      placeholder="What would you like Claude to work on?"
-                      value={initialPrompt}
-                      onChange={(e) => setInitialPrompt(e.target.value)}
-                      disabled={loading}
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-5 flex justify-end gap-2.5">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      disabled={loading}
-                      className="rounded-sm border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading || !workDir.trim()}
-                      className="rounded-sm bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Creating...' : 'Start Project'}
-                    </button>
-                  </div>
-                </form>
-              </Dialog.Panel>
-            </Transition.Child>
+              Working Directory
+            </label>
+            <input
+              id="workDir"
+              type="text"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="/path/to/project"
+              value={workDir}
+              onChange={(e) => setWorkDir(e.target.value)}
+              disabled={loading}
+            />
           </div>
-        </div>
-      </Dialog>
-    </Transition>
+
+          {/* Initial Prompt Input */}
+          <div className="flex flex-col gap-2">
+            <label
+              className="text-sm font-medium text-foreground"
+              htmlFor="initialPrompt"
+            >
+              Initial Prompt
+            </label>
+            <textarea
+              id="initialPrompt"
+              className="flex min-h-[100px] w-full resize-y rounded-md border border-input bg-transparent px-3 py-1.5 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="What would you like Claude to work on?"
+              value={initialPrompt}
+              onChange={(e) => setInitialPrompt(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2.5">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !workDir.trim()}
+            >
+              {loading ? 'Creating...' : 'Start Project'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

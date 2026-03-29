@@ -49,7 +49,7 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
       </div>
     </header>
 
-    {newProjectModalOpen && <NewProjectModal onClose={() => setNewProjectModalOpen(false)} />}
+    {newProjectModalOpen && <NewProjectModal isOpen={newProjectModalOpen} onClose={() => setNewProjectModalOpen(false)} />}
     </>
   )
 }

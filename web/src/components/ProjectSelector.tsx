@@ -1,6 +1,12 @@
 import { useAppStore } from '../stores/appStore'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { Listbox } from './ui/listbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 function formatTimeAgo(timestamp: number): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000)
@@ -32,9 +38,6 @@ export default function ProjectSelector() {
   } = useAppStore()
   const { switchSession } = useWebSocket()
 
-  const currentProject = projects.find((p) => p.id === currentProjectId)
-  void currentProject // suppress unused variable warning
-
   const handleSelectProject = (projectId: string) => {
     const project = projects.find((p) => p.id === projectId)
     if (!project?.workDir) return
@@ -42,20 +45,37 @@ export default function ProjectSelector() {
     switchSession(project.workDir)
   }
 
-  const listboxOptions = projects.map((project) => ({
-    id: project.id,
-    name: getProjectName(project.path),
-    status: project.status as 'active' | 'inactive',
-    meta: `${formatTimeAgo(project.lastActivity)} · ${formatSize(project.size)}`,
-  }))
-
   return (
-    <Listbox
-      value={currentProjectId}
-      onChange={handleSelectProject}
-      options={listboxOptions}
-      placeholder="Select Project..."
-      className="min-w-[140px]"
-    />
+    <Select
+      value={currentProjectId ?? undefined}
+      onValueChange={handleSelectProject}
+    >
+      <SelectTrigger className="min-w-[140px] h-8">
+        <SelectValue placeholder="Select Project..." />
+      </SelectTrigger>
+      <SelectContent>
+        {projects.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No projects
+          </div>
+        ) : (
+          projects.map((project) => (
+            <SelectItem key={project.id} value={project.id}>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    project.status === 'active' ? 'bg-green-500' : 'bg-muted-foreground'
+                  }`}
+                />
+                <span className="truncate">{getProjectName(project.path)}</span>
+                <span className="text-muted-foreground text-xs shrink-0">
+                  {formatTimeAgo(project.lastActivity)} · {formatSize(project.size)}
+                </span>
+              </div>
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
   )
 }

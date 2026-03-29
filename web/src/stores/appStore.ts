@@ -1,39 +1,7 @@
 import { create } from 'zustand'
 import type { Agent, Project, ConnectionStatus, Tool, TimelineEvent } from '../types'
-
-// Helper to fetch projects from API
-async function fetchProjectsFromApi(): Promise<Project[]> {
-  try {
-    const res = await fetch('/api/sessions')
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.sessions || []
-  } catch {
-    return []
-  }
-}
-
-// Helper to fetch hooks status from API
-async function fetchHooksStatusFromApi(): Promise<{
-  configured: boolean
-  hookScriptExists: boolean
-  hooksConfigured: string[]
-  settingsFileExists: boolean
-}> {
-  try {
-    const res = await fetch('/api/hooks/status')
-    if (!res.ok) return { configured: false, hookScriptExists: false, hooksConfigured: [], settingsFileExists: false }
-    const data = await res.json()
-    return {
-      configured: data.configured ?? false,
-      hookScriptExists: data.hookScriptExists ?? false,
-      hooksConfigured: data.hooksConfigured ?? [],
-      settingsFileExists: data.settingsFileExists ?? false,
-    }
-  } catch {
-    return { configured: false, hookScriptExists: false, hooksConfigured: [], settingsFileExists: false }
-  }
-}
+import { fetchSessions } from '../api/sessions'
+import { fetchHooksStatus } from '../api/hooks'
 
 // Format timestamp for timeline
 function formatTimestamp(ms: number): string {
@@ -97,7 +65,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setProjects: (projects) => set({ projects }),
   setCurrentProject: (projectId) => set({ currentProjectId: projectId }),
   fetchProjects: async () => {
-    const projects = await fetchProjectsFromApi()
+    const projects = await fetchSessions()
     set({ projects })
   },
 
@@ -188,7 +156,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setHooksModalOpen: (open) => set({ hooksModalOpen: open }),
   setNewProjectModalOpen: (open) => set({ newProjectModalOpen: open }),
   fetchHooksStatus: async () => {
-    const status = await fetchHooksStatusFromApi()
+    const status = await fetchHooksStatus()
     set({ 
       hooksConfigured: status.configured,
       hooksHookScriptExists: status.hookScriptExists,

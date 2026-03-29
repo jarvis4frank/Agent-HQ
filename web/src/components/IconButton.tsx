@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { LucideIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface IconButtonProps {
   icon: LucideIcon
@@ -10,63 +10,87 @@ interface IconButtonProps {
   disabled?: boolean
 }
 
-export default function IconButton({ 
-  icon: Icon, 
-  label, 
-  onClick, 
+const variantSizeMap: Record<string, 'default' | 'ghost' | 'destructive' | 'outline' | 'secondary' | null> = {
+  default: 'secondary',
+  primary: 'default',
+  danger: 'destructive',
+  ghost: 'ghost',
+  success: 'default',
+  warning: 'default',
+}
+
+const iconSizeMap: Record<string, 'icon-xs' | 'icon-sm' | 'icon' | 'icon-lg'> = {
+  sm: 'icon-xs',
+  md: 'icon-sm',
+  lg: 'icon',
+}
+
+export default function IconButton({
+  icon: Icon,
+  label,
+  onClick,
   variant = 'default',
   size = 'md',
-  disabled = false
+  disabled = false,
 }: IconButtonProps) {
-  const sizeStyles = {
-    sm: { width: 24, height: 24 },
-    md: { width: 32, height: 32 }, 
-    lg: { width: 40, height: 40 }
-  }
-  
-  const variantStyles = {
-    default: { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' },
-    primary: { backgroundColor: 'var(--accent-blue)', color: 'white' },
-    danger: { backgroundColor: 'transparent', color: 'var(--accent-red)' },
-    ghost: { backgroundColor: 'transparent', color: 'var(--text-secondary)' },
-    success: { backgroundColor: '#2ecc71', color: 'white' },
-    warning: { backgroundColor: '#f1c40f', color: 'black' }
+  // Map our variant to shadcn Button variant
+  const buttonVariant = variantSizeMap[variant] ?? 'secondary'
+  const buttonSize = iconSizeMap[size] ?? 'icon-sm'
+
+  // For primary/success/warning variants, we need custom styling
+  // since shadcn doesn't have those built-in
+  const isCustomVariant = variant === 'primary' || variant === 'success' || variant === 'warning'
+
+  const customStyles: Record<string, { bg: string; color: string; hoverBg: string }> = {
+    primary: { bg: '#58a6ff', color: 'white', hoverBg: '#4a94e8' },
+    success: { bg: '#3fb950', color: 'white', hoverBg: '#27ae60' },
+    warning: { bg: '#d29922', color: 'black', hoverBg: '#f39c12' },
   }
 
-  const variantHoverStyles = {
-    default: { backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' },
-    primary: { backgroundColor: '#4a94e8', color: 'white' },
-    danger: { backgroundColor: 'rgba(248, 81, 73, 0.1)', color: 'var(--accent-red)' },
-    ghost: { backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' },
-    success: { backgroundColor: '#27ae60', color: 'white' },
-    warning: { backgroundColor: '#f39c12', color: 'black' }
+  if (isCustomVariant) {
+    const style = customStyles[variant]
+    return (
+      <button
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size === 'sm' ? 24 : size === 'lg' ? 40 : 32,
+          height: size === 'sm' ? 24 : size === 'lg' ? 40 : 32,
+          borderRadius: 6,
+          border: 'none',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          backgroundColor: style.bg,
+          color: style.color,
+          opacity: disabled ? 0.5 : 1,
+          transition: 'background-color var(--transition-fast)',
+        }}
+        onMouseEnter={(e) => {
+          if (!disabled) e.currentTarget.style.backgroundColor = style.hoverBg
+        }}
+        onMouseLeave={(e) => {
+          if (!disabled) e.currentTarget.style.backgroundColor = style.bg
+        }}
+        onClick={onClick}
+        disabled={disabled}
+        title={label}
+        type="button"
+      >
+        <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />
+      </button>
+    )
   }
-
-  const [isHovered, setIsHovered] = useState(false)
 
   return (
-    <button
-      style={{
-        ...sizeStyles[size],
-        ...variantStyles[variant],
-        ...(isHovered ? variantHoverStyles[variant] : {}),
-        borderRadius: 'var(--radius-sm)',
-        border: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all var(--transition-fast)',
-        opacity: disabled ? 0.5 : 1
-      }}
+    <Button
+      variant={buttonVariant as 'secondary' | 'ghost' | 'destructive' | 'outline'}
+      size={buttonSize}
       onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       disabled={disabled}
       title={label}
       type="button"
     >
       <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />
-    </button>
+    </Button>
   )
 }

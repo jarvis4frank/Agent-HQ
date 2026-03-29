@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react'
 import { useAppStore } from '../stores/appStore'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 
 export default function NewProjectButton() {
   const { setNewProjectModalOpen } = useAppStore()
