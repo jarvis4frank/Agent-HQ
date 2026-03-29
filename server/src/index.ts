@@ -103,6 +103,14 @@ function parseSessionFromDir(dirPath: string): Session | null {
   try {
     const stats = statSync(dirPath)
     const name = basename(dirPath)
+    
+    // Skip directories that don't look like valid session IDs
+    // Valid session IDs should start with "session_" or "project_" or be numeric
+    if (!name.match(/^(session_|project_|\d+$)/)) {
+      console.warn('[Server] Skipping invalid session directory:', name)
+      return null
+    }
+    
     return {
       id: name,
       path: dirPath,
