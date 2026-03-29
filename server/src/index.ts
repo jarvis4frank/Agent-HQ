@@ -768,22 +768,29 @@ wss.on('connection', (ws) => {
           if (msg.sessionId) {
             console.log('[WS] Creating PTY for session:', msg.sessionId)
 
+            // Validate cwd - must be an existing directory
+            let cwd = msg.sessionId
+            if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
+              console.warn('[WS] sessionId is not a valid directory, falling back to homedir:', cwd)
+              cwd = homedir()
+            }
+
             const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
               name: 'xterm-256color',
               cols: 80,
               rows: 24,
-              cwd: msg.sessionId,
+              cwd: cwd,
               env: process.env as { [key: string]: string },
             })
 
             currentSessionId = msg.sessionId
             session = {
               id: msg.sessionId,
-              path: join(CLAUDE_DIR, msg.sessionId),
+              path: cwd,
               status: 'active',
               lastActivity: Date.now(),
               size: 0,
-              workDir: msg.sessionId,
+              workDir: cwd,
               pty: ptyProcess,
               ws,
             }
@@ -831,22 +838,29 @@ wss.on('connection', (ws) => {
               session.pty.kill()
             }
 
+            // Validate cwd - must be an existing directory
+            let cwd = msg.sessionId
+            if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
+              console.warn('[WS] sessionId is not a valid directory, falling back to homedir:', cwd)
+              cwd = homedir()
+            }
+
             const ptyProcess = pty.spawn(CLAUDE_BINARY, [], {
               name: 'xterm-256color',
               cols: 80,
               rows: 24,
-              cwd: msg.sessionId,
+              cwd: cwd,
               env: process.env as { [key: string]: string },
             })
 
             currentSessionId = msg.sessionId
             session = {
               id: msg.sessionId,
-              path: join(CLAUDE_DIR, msg.sessionId),
+              path: cwd,
               status: 'active',
               lastActivity: Date.now(),
               size: 0,
-              workDir: msg.sessionId,
+              workDir: cwd,
               pty: ptyProcess,
               ws,
             }

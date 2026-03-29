@@ -15,7 +15,7 @@ export default function Header({ onReconnect: _onReconnect }: HeaderProps) {
   return (
     <>
     <header className="h-12 bg-bg-secondary border-b border-border flex items-center justify-between px-4 flex-shrink-0">
-      <div className="flex items-center gap-4 whitespace-nowrap overflow-visible">
+      <div className="flex items-center gap-4 whitespace-nowrap overflow-visible relative z-10">
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xl text-accent-blue">◉</span>
           <span className="font-semibold text-sm text-text-primary whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" title="Agent HQ">Agent HQ</span>
